@@ -1,0 +1,68 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "gng-level1.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1
+        },
+        "back.tsx": {
+            "scaleInDock": 2.6545,
+            "scaleInEditor": 1
+        },
+        "flottes.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ghost_stage1_herbe.tsx": {
+            "scaleInDock": 3.6676,
+            "scaleInEditor": 1
+        },
+        "gng-level1.tmx": {
+            "scale": 1.5753,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 119.34234748936717,
+                "y": 152.03453310480546
+            }
+        },
+        "nuages.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "/Users/ezdata/Documents/ngdevkit/05-scrolling/gfx",
+    "map.height": 15,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 32,
+    "openFiles": [
+        "gng-level1.tmx",
+        "back.tsx",
+        "nuages.tsx",
+        "flottes.tsx",
+        "ghost_stage1_herbe.tsx"
+    ],
+    "project": "gng.tiled-project",
+    "property.type": "int",
+    "recentFiles": [
+        "ghost_stage1_herbe.tsx",
+        "flottes.tsx",
+        "nuages.tsx",
+        "back.tsx",
+        "gng-level1.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    },
+    "tileset.transparentColor": "#000000",
+    "tileset.useTransparentColor": true
+}
