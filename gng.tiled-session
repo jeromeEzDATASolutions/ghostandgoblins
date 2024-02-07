@@ -11,6 +11,10 @@
         "": {
             "scaleInDock": 1
         },
+        "arbre.tsx": {
+            "scaleInDock": 3.8976,
+            "scaleInEditor": 1
+        },
         "back.tsx": {
             "scaleInDock": 2.6545,
             "scaleInEditor": 1
@@ -24,11 +28,11 @@
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 1.5753,
-            "selectedLayer": 0,
+            "scale": 2.8092,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 119.34234748936717,
-                "y": 152.03453310480546
+                "x": 240.2819307988039,
+                "y": 130.10821586216713
             }
         },
         "nuages.tsx": {
@@ -47,16 +51,18 @@
         "back.tsx",
         "nuages.tsx",
         "flottes.tsx",
+        "arbre.tsx",
         "ghost_stage1_herbe.tsx"
     ],
     "project": "gng.tiled-project",
     "property.type": "int",
     "recentFiles": [
+        "gng-level1.tmx",
         "ghost_stage1_herbe.tsx",
+        "arbre.tsx",
         "flottes.tsx",
         "nuages.tsx",
-        "back.tsx",
-        "gng-level1.tmx"
+        "back.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
