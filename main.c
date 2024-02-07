@@ -69,6 +69,7 @@ const u16 clut[][16]= {
     #include "sprites/nuages.pal"
     #include "sprites/flottes.pal"
     #include "sprites/ghost_stage1_herbe.pal"
+    #include "sprites/arbre.pal"
 };
 
 void init_palette() {
@@ -94,7 +95,8 @@ typedef struct _layer_t {
 
 #include "include_layers.c"
 
-u16 palettes[4][2] = {
+u16 palettes[5][2] = {
+    {5, 469},
     {4, 453},
     {3, 443},
     {2, 401},
@@ -134,6 +136,17 @@ layer_t herbe = {
     .tmx = {},
 };
 
+layer_t arbre = {
+    .sprite = 79,
+    .width = 12,
+    .height = 9,
+    .x = 0,
+    .y = 0,
+    .palette = 5, 
+    .tileset_offset = 256,
+    .tmx = {},
+};
+
 void display_map_from_tmx(layer_t *layer){
 
     u8 i=0, j=0, k=0, l=0, p=0, s=0;
@@ -160,7 +173,7 @@ void display_map_from_tmx(layer_t *layer){
                 *REG_VRAMRW = tile_tmp;
                 // --- On va chercher la palette dans le tableau palettes
                 u16 good_palette = layer->palette;
-                for(p=0;p<3;p++){
+                for(p=0;p<5;p++){
                     if ( layer->tmx[j][i] >= palettes[p][1] ){
                         good_palette = palettes[p][0];
                         break;
@@ -208,7 +221,7 @@ void change_tiles(layer_t *layer, u16 colonne_to_actualize, u16 ecart){
         *REG_VRAMRW = layer->tileset_offset+layer->tmx[j][tile+ecart]-1;
         // --- On va chercher la palette dans le tableau palettes
         u16 good_palette = layer->palette;
-        for(p=0;p<4;p++){
+        for(p=0;p<5;p++){
             if ( layer->tmx[j][tile+ecart] >= palettes[p][1] ){
                 good_palette = palettes[p][0];
                 break;
@@ -375,16 +388,17 @@ int main(void) {
             nuages.tmx[j][loop] = tmx_nuages[j][loop];
             herbe.tmx[j][loop] = tmx_herbe[j][loop];
             layer1.tmx[j][loop] = tmx_decor[j][loop];
+            arbre.tmx[j][loop] = tmx_arbre[j][loop];
         }
     }
 
     display_map_from_tmx(&layer1);
     //display_map_from_tmx(&nuages);
     display_map_from_tmx(&herbe);
+    display_map_from_tmx(&arbre);
 
     for(;;) {
         ng_wait_vblank();
-        
         check_move_arthur();
         //snprintf(str, 12, "x %4d", x); ng_text(2, 3, 0, str);
         //snprintf(str, 12, "tile %4d", tile); ng_text(2, 4, 0, str);
