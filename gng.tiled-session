@@ -11,33 +11,40 @@
         "": {
             "scaleInDock": 1
         },
+        ":/automap-tiles.tsx": {
+            "scaleInDock": 1
+        },
         "arbre.tsx": {
-            "scaleInDock": 3.8976,
-            "scaleInEditor": 1
+            "scaleInDock": 3.9564,
+            "scaleInEditor": 6.68
         },
         "back.tsx": {
             "scaleInDock": 2.6545,
-            "scaleInEditor": 1
+            "scaleInEditor": 6.68
+        },
+        "background2.tsx": {
+            "scaleInDock": 1.9271,
+            "scaleInEditor": 2.7364
         },
         "flottes.tsx": {
             "scaleInDock": 1,
-            "scaleInEditor": 1
+            "scaleInEditor": 6.68
         },
         "ghost_stage1_herbe.tsx": {
             "scaleInDock": 3.6676,
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 2.8092,
-            "selectedLayer": 2,
+            "scale": 3.2398,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 240.2819307988039,
-                "y": 130.10821586216713
+                "x": 290.9130193221804,
+                "y": 110.3463176739305
             }
         },
         "nuages.tsx": {
             "scaleInDock": 1,
-            "scaleInEditor": 1
+            "scaleInEditor": 6.68
         }
     },
     "last.imagePath": "/Users/ezdata/Documents/ngdevkit/05-scrolling/gfx",
@@ -58,11 +65,12 @@
     "property.type": "int",
     "recentFiles": [
         "gng-level1.tmx",
-        "ghost_stage1_herbe.tsx",
         "arbre.tsx",
-        "flottes.tsx",
         "nuages.tsx",
-        "back.tsx"
+        "back.tsx",
+        "flottes.tsx",
+        "background2.tsx",
+        "ghost_stage1_herbe.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {

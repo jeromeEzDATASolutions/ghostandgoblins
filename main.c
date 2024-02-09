@@ -65,11 +65,10 @@ const u16 clut[][16]= {
     {0x8000, 0x0fff, 0x0333, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
      0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000},
     /// sprite palettes
-    #include "sprites/back.pal"
     #include "sprites/nuages.pal"
+    #include "sprites/back.pal"
     #include "sprites/flottes.pal"
     #include "sprites/ghost_stage1_herbe.pal"
-    #include "sprites/arbre.pal"
 };
 
 void init_palette() {
@@ -90,38 +89,39 @@ typedef struct _layer_t {
     s16 y;
     u16 palette;
     u16 tileset_offset;
-    u16 tmx[15][224];
+    u16 tmx[15][GNG_LEVEL1_MAP_WIDTH];
 } layer_t;
 
 #include "include_layers.c"
 
-u16 palettes[5][2] = {
-    {5, 469},
+u16 tile_distance[GNG_LEVEL1_MAP_WIDTH];
+
+u16 palettes[4][2] = {
     {4, 453},
     {3, 443},
-    {2, 401},
+    {2, 43},
     {1, 1},
 };
 
-layer_t layer1 = {
+layer_t nuages = { // 224*48
     .sprite = 1,
+    .width = 14,
+    .height = 3,
+    .x = 60,
+    .y = -50,
+    .palette = 1, 
+    .tileset_offset = 256,
+    .tmx = {},
+};
+
+layer_t background = {
+    .sprite = 15,
     .width = 32,
     .height = 15,
     .x = 0,
     .y = 0,
-    .palette = 1, 
-    .tileset_offset = 256, 
-    .tmx = {},
-};
-
-layer_t nuages = {
-    .sprite = 33,
-    .width = 14,
-    .height = 3,
-    .x = 90,
-    .y = -45,
     .palette = 2, 
-    .tileset_offset = 256,
+    .tileset_offset = 256, 
     .tmx = {},
 };
 
@@ -132,17 +132,6 @@ layer_t herbe = {
     .x = 0,
     .y = -208,
     .palette = 4, 
-    .tileset_offset = 256,
-    .tmx = {},
-};
-
-layer_t arbre = {
-    .sprite = 79,
-    .width = 12,
-    .height = 9,
-    .x = 0,
-    .y = 0,
-    .palette = 5, 
     .tileset_offset = 256,
     .tmx = {},
 };
@@ -164,7 +153,7 @@ void display_map_from_tmx(layer_t *layer){
 
             if ( layer->tmx[j][i] == 0 ){
                 s16 temp = *REG_VRAMRW; // Get to set
-                *REG_VRAMRW = temp;
+                *REG_VRAMRW = SROM_EMPTY_TILE;
                 temp = *REG_VRAMRW; // Palette 
                 *REG_VRAMRW = temp;
             }
@@ -173,7 +162,7 @@ void display_map_from_tmx(layer_t *layer){
                 *REG_VRAMRW = tile_tmp;
                 // --- On va chercher la palette dans le tableau palettes
                 u16 good_palette = layer->palette;
-                for(p=0;p<5;p++){
+                for(p=0;p<4;p++){
                     if ( layer->tmx[j][i] >= palettes[p][1] ){
                         good_palette = palettes[p][0];
                         break;
@@ -199,7 +188,6 @@ void display_map_from_tmx(layer_t *layer){
         *REG_VRAMRW=0xFFF;
         *REG_VRAMRW=1<<6; // sticky
     }
-
 }
 
 void update_layer(layer_t *layer){
@@ -221,13 +209,24 @@ void change_tiles(layer_t *layer, u16 colonne_to_actualize, u16 ecart){
         *REG_VRAMRW = layer->tileset_offset+layer->tmx[j][tile+ecart]-1;
         // --- On va chercher la palette dans le tableau palettes
         u16 good_palette = layer->palette;
-        for(p=0;p<5;p++){
+        for(p=0;p<4;p++){
             if ( layer->tmx[j][tile+ecart] >= palettes[p][1] ){
                 good_palette = palettes[p][0];
                 break;
             }
         }
         *REG_VRAMRW = good_palette<<8;
+    }
+}
+
+void hide_sprite_colonne(layer_t *layer, u16 colonne_to_hide){
+    u8 j=0;
+    colonne_to_hide += layer->sprite;
+    *REG_VRAMMOD=1;
+    *REG_VRAMADDR=ADDR_SCB1+(colonne_to_hide*64);
+    for(j=0;j<layer->height;j++){
+        *REG_VRAMRW = SROM_EMPTY_TILE;
+        *REG_VRAMRW = 1<<8;
     }
 }
 
@@ -257,7 +256,7 @@ void check_move_arthur()
     if (d) { // Bottom
     }
 
-    if (l) { // Gauche
+    if (l ) { // Gauche
 
         prendre_en_compte=1;
         arthur_sens = 0;
@@ -273,23 +272,24 @@ void check_move_arthur()
             tile = (x>>4)+1;
 
             arthur_absolute_x--;
-            layer1.x++;
+            background.x++;
             herbe.x++;
             nuages.x++;
 
             // --- Update tiles for scrolling
             if ( (tile-1)<<4 == x ){
-                for(t=12;t<236;t+=32){
+                //change_tiles(&background, tile+10, -12);
+                /*for(t=12;t<236;t+=32){
                     if ( tile >= t && tile < t+32 ){
-                        change_tiles(&layer1, tile-t, -12);
-                        change_tiles(&herbe, tile-t, -12);
+                        //change_tiles(&background, tile-t, -12);
+                        //change_tiles(&herbe, tile-t, -12);
                     }
-                }
+                }*/
             }
 
-            update_layer(&layer1);
+            update_layer(&background);
             update_layer(&herbe);
-            //update_layer(&nuages);
+            update_layer(&nuages);
         }
     }
 
@@ -311,25 +311,23 @@ void check_move_arthur()
 
             x++;
             tile = (x>>4)+1;
-
             arthur_absolute_x++;
-            layer1.x--;
+            background.x--;
             herbe.x--;
             nuages.x--;
 
             // --- Update tiles for scrolling
             if ( (tile-1)<<4 == x ){
-                for(t=12;t<236;t+=32){
-                    if ( tile >= t && tile < t+32 ){
-                        change_tiles(&layer1, tile-t, 20);
-                        change_tiles(&herbe, tile-t, 20);
-                    }
+                if ( tile>=12 ){
+                    change_tiles(&background, tile-tile_distance[tile], 20);
+                    change_tiles(&herbe, tile-tile_distance[tile], 20);
+                    hide_sprite_colonne(&nuages, tile-tile_distance[tile]);
                 }
             }
 
-            update_layer(&layer1);
+            update_layer(&nuages);
+            update_layer(&background);
             update_layer(&herbe);
-            //update_layer(&nuages);
         }
     }
 
@@ -338,34 +336,14 @@ void check_move_arthur()
     }
 
     if ( prendre_en_compte == 1 ){
-    
         frames=(frames+1)%60;
-        if ( 
-            frames == 1 
-        || frames == 4 
-        || frames == 8 
-        || frames == 12 
-        || frames == 16 
-        || frames == 20 
-        || frames == 24 
-        || frames == 28
-        || frames == 32 
-        || frames == 36 
-        || frames == 40 
-        || frames == 44 
-        || frames == 48 
-        || frames == 52 
-        || frames == 56
-        ) {
+        if ( frames == 1 || frames == 4 || frames == 8 || frames == 12 || frames == 16 || frames == 20 || frames == 24 || frames == 28 || frames == 32 || frames == 36 || frames == 40 || frames == 44 || frames == 48 || frames == 52 || frames == 56 ) {
             arthur_index++;
         }
-
         const u8 *tiles = arthur_sens?right_tiles:left_tiles;
-
         if ( arthur_index == 7 ){
             arthur_index=0;
         }
-    
         //display_sprite_arthur(tiles[arthur_index]);
     }
 }
@@ -373,7 +351,7 @@ void check_move_arthur()
 int main(void) {
 
     char str[10];
-    u16 j, loop;
+    u16 i, j, loop, t;
 
     ng_cls();
     clear_tiles();
@@ -382,26 +360,38 @@ int main(void) {
     //arthur_absolute_x = arthur.x;
     x = 0;
 
-    // Init tmx nuages
+    // Init array of tileindex for scrolling
+    for(i=0;i<44;i++)
+        tile_distance[i] = 12;
+    for(i=44;i<76;i++)
+        tile_distance[i] = 44;
+    for(i=76;i<108;i++)
+        tile_distance[i] = 76;
+    for(i=108;i<140;i++)
+        tile_distance[i] = 108;
+    for(i=140;i<172;i++)
+        tile_distance[i] = 140;
+    for(i=172;i<204;i++)
+        tile_distance[i] = 172;
+
+    // Init tmx
     for(j = 0; j < 15; j++) {
-        for(loop = 0; loop < 224; loop++) {
+        for(loop = 0; loop < GNG_LEVEL1_MAP_WIDTH; loop++) {
             nuages.tmx[j][loop] = tmx_nuages[j][loop];
+            background.tmx[j][loop] = tmx_background[j][loop];
             herbe.tmx[j][loop] = tmx_herbe[j][loop];
-            layer1.tmx[j][loop] = tmx_decor[j][loop];
-            arbre.tmx[j][loop] = tmx_arbre[j][loop];
         }
     }
 
-    display_map_from_tmx(&layer1);
-    //display_map_from_tmx(&nuages);
+    display_map_from_tmx(&nuages);
+    display_map_from_tmx(&background);
     display_map_from_tmx(&herbe);
-    display_map_from_tmx(&arbre);
 
     for(;;) {
         ng_wait_vblank();
         check_move_arthur();
-        //snprintf(str, 12, "x %4d", x); ng_text(2, 3, 0, str);
-        //snprintf(str, 12, "tile %4d", tile); ng_text(2, 4, 0, str);
+        //snprintf(str, 15, "Tile %5d", tile); ng_text(2, 2, 0, str);
+        //snprintf(str, 15, "Ecart %5d", tile_distance[tile]); ng_text(2, 4, 0, str);
     }
 
     return 0;
