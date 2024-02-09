@@ -30,6 +30,18 @@ $(ASSETS)/rom/c1.bin $(ASSETS)/rom/s1.bin:
 	$(MAKE) -C $(ASSETS)
 
 # -------------------------------------------- #
+# --- Nuages                                   #
+# -------------------------------------------- #
+sprites/nuages.png: gfx/nuages.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 224x48+0+0 +repage -background black -flatten $@
+
+sprites/nuages.c1 sprites/nuages.c2: sprites/nuages.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/nuages.pal: sprites/nuages.png
+	$(PALTOOL) $< -o $@
+
+# -------------------------------------------- #
 # --- Level1 Terre1 : 320x320                  #
 # -------------------------------------------- #
 sprites/back.png: gfx/back.png | sprites
@@ -41,18 +53,9 @@ sprites/back.c1 sprites/back.c2: sprites/back.png
 sprites/back.pal: sprites/back.png
 	$(PALTOOL) $< -o $@
 
-
-
-sprites/nuages.png: gfx/nuages.png | sprites
-	$(CONVERT) $^ $^ $^ +append -crop 224x48+0+0 +repage -background black -flatten $@
-
-sprites/nuages.c1 sprites/nuages.c2: sprites/nuages.png
-	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
-
-sprites/nuages.pal: sprites/nuages.png
-	$(PALTOOL) $< -o $@
-
-
+# -------------------------------------------- #
+# --- Flotte                                   #
+# -------------------------------------------- #
 sprites/flottes.png: gfx/flottes.png | sprites
 	$(CONVERT) $^ $^ $^ +append -crop 160x16+0+0 +repage -background black -flatten $@
 
@@ -62,7 +65,9 @@ sprites/flottes.c1 sprites/flottes.c2: sprites/flottes.png
 sprites/flottes.pal: sprites/flottes.png
 	$(PALTOOL) $< -o $@
 
-
+# -------------------------------------------- #
+# --- Herbe                                    #
+# -------------------------------------------- #
 sprites/ghost_stage1_herbe.png: gfx/ghost_stage1_herbe.png | sprites
 	$(CONVERT) $^ $^ $^ +append -crop 64x64+0+0 +repage -background black -flatten $@
 
@@ -72,9 +77,6 @@ sprites/ghost_stage1_herbe.c1 sprites/ghost_stage1_herbe.c2: sprites/ghost_stage
 sprites/ghost_stage1_herbe.pal: sprites/ghost_stage1_herbe.png
 	$(PALTOOL) $< -o $@
 
-
-
-
 $(ELF):	$(OBJS:%=%.o)
 	$(M68KGCC) -o $@ $^ `pkg-config --libs ngdevkit`
 
@@ -82,8 +84,8 @@ $(ELF):	$(OBJS:%=%.o)
 	$(M68KGCC) $(NGCFLAGS) -std=gnu99 -fomit-frame-pointer -g -c $< -o $@
 
 main.c: \
-	sprites/back.pal \
 	sprites/nuages.pal \
+	sprites/back.pal \
 	sprites/flottes.pal \
 	sprites/ghost_stage1_herbe.pal \
 
@@ -99,16 +101,16 @@ $(VROM): | rom
 # sprite ROM C1 C2: parallax layers
 CROMSIZE:=1048576
 $(CROM1): $(ASSETS)/rom/c1.bin \
-	sprites/back.c1 \
 	sprites/nuages.c1 \
+	sprites/back.c1 \
 	sprites/flottes.c1 \
 	sprites/ghost_stage1_herbe.c1 \
 	| rom
 	cat $(ASSETS)/rom/c1.bin $(filter %.c1,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 
 $(CROM2): $(ASSETS)/rom/c2.bin \
-	sprites/back.c2 \
 	sprites/nuages.c2 \
+	sprites/back.c2 \
 	sprites/flottes.c2 \
 	sprites/ghost_stage1_herbe.c2 \
 	| rom
