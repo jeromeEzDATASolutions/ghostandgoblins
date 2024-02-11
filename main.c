@@ -40,16 +40,21 @@
 #define SROM_EMPTY_TILE 255
 
 // Parameters of the first level
+#define DEBUG 1
+#define START_LEVEL 1
 #define GNG_LEVEL1_MAP_WIDTH 224
+#define PALETTE_NUMBER 6
 
-u16 frames = 0;
+u16 frameCount = 0;
 u16 x = 0;
 u16 x_max = (GNG_LEVEL1_MAP_WIDTH-20)*16-1;
 u16 tile = 0;
 
+u16 level;
+
 int arthur_index = 0;
 int arthur_sens = 1;
-int arthur_absolute_x = 0;
+int arthur_absolute_x = 130;
 
 // Clear the 40*32 tiles of fix map
 void clear_tiles() {
@@ -65,10 +70,12 @@ const u16 clut[][16]= {
     {0x8000, 0x0fff, 0x0333, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
      0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000},
     /// sprite palettes
-    #include "sprites/nuages.pal"
     #include "sprites/back.pal"
     #include "sprites/flottes.pal"
-    #include "sprites/ghost_stage1_herbe.pal"
+    #include "sprites/herbe.pal"
+    #include "sprites/map.pal"
+    #include "sprites/arthur.pal"
+    #include "sprites/nuages.pal"
 };
 
 void init_palette() {
@@ -87,64 +94,269 @@ typedef struct _layer_t {
     u16 height;
     s16 x;
     s16 y;
-    u16 palette;
     u16 tileset_offset;
     u16 tmx[15][GNG_LEVEL1_MAP_WIDTH];
 } layer_t;
+
+typedef struct _arthur_t {
+    u16 sprite;
+    u16 width;
+    u16 height;
+    s16 x;
+    s16 y;
+    u16 tmx[6][16];
+} arthur_t;
+
+typedef struct _tombe_t {
+    u16 sprite;
+    u16 width;
+    u16 height;
+    s16 x;
+    s16 y;
+    u16 tmx[2][2];
+    u16 hide_after_tile;
+} tombe_t;
 
 #include "include_layers.c"
 
 u16 tile_distance[GNG_LEVEL1_MAP_WIDTH];
 
-u16 palettes[4][2] = {
-    {4, 453},
-    {3, 443},
-    {2, 43},
+u16 palettes[PALETTE_NUMBER][2] = {
+    {6, 604},
+    {5, 508},
+    {4, 427},
+    {3, 411},
+    {2, 401},
     {1, 1},
 };
 
-layer_t nuages = { // 224*48
-    .sprite = 1,
-    .width = 14,
-    .height = 3,
-    .x = 60,
-    .y = -50,
-    .palette = 1, 
-    .tileset_offset = 256,
-    .tmx = {},
-};
-
 layer_t background = {
-    .sprite = 15,
+    .sprite = 1,
     .width = 32,
     .height = 15,
     .x = 0,
     .y = 0,
-    .palette = 2, 
     .tileset_offset = 256, 
     .tmx = {},
 };
 
-layer_t herbe = {
-    .sprite = 47,
-    .width = 32,
+arthur_t arthur = {
+    .sprite = 33,
+    .width = 2,
     .height = 2,
+    .x = 130,
+    .y = -178,
+    .tmx = {},
+};
+
+tombe_t tombe1 = {
+    .sprite = 35,
+    .width = 2,
+    .height = 2,
+    .x = 40,
+    .y = -179,
+    .tmx = {
+        {572, 573},
+        {588, 589},
+    },
+    .hide_after_tile = 6,
+};
+
+tombe_t tombe2 = {
+    .sprite = 37,
+    .width = 2,
+    .height = 2,
+    .x = 243,
+    .y = -179,
+    .tmx = {
+        {574, 575},
+        {590, 591},
+    },
+    .hide_after_tile = 18,
+};
+
+layer_t herbe = {
+    .sprite = 39,
+    .width = 32,
+    .height = 15,
     .x = 0,
-    .y = -208,
-    .palette = 4, 
+    .y = 0, // -208
     .tileset_offset = 256,
     .tmx = {},
 };
+
+layer_t map = {
+    .sprite = 1,
+    .width = 32,
+    .height = 15,
+    .x = 40,
+    .y = 30,
+    .tileset_offset = 256,
+    .tmx = {},
+};
+
+
+
+/*********************************
+ * 
+ * Function Tombes
+ * 
+ *********************************/
+void display_tombe(tombe_t *tombe){
+    
+    u8 i=0, j=0, p=0;
+    u16 sprite_compteur = tombe->sprite;
+
+    for(i=0;i<tombe->width;i++){
+        *REG_VRAMMOD=1;
+        *REG_VRAMADDR=ADDR_SCB1+(sprite_compteur*64);
+        for(j=0;j<tombe->height;j++){
+            *REG_VRAMRW = 256+tombe->tmx[j][i]-1;
+            // --- On va chercher la palette dans le tableau palettes
+            u16 good_palette = 1;
+            for(p=0;p<PALETTE_NUMBER;p++){
+                if ( tombe->tmx[j][i] >= palettes[p][1] ){
+                    good_palette = palettes[p][0];
+                    break;
+                }
+            }
+            *REG_VRAMRW = good_palette<<8;
+        }
+        sprite_compteur++;
+    }
+
+    // Positionnement du sprite global
+    *REG_VRAMMOD=0x200;
+    *REG_VRAMADDR=ADDR_SCB2+tombe->sprite;
+    *REG_VRAMRW=0xFFF;
+    *REG_VRAMRW=(tombe->y<<7)+tombe->height;
+    *REG_VRAMRW=tombe->x<<7;
+
+    // --- On chaine l'ensemble des sprites
+    for (u16 v=1; v<tombe->width; v++) {
+        *REG_VRAMADDR=ADDR_SCB2+tombe->sprite+v;
+        *REG_VRAMRW=0xFFF;
+        *REG_VRAMRW=1<<6; // sticky
+    }
+
+    
+}
+
+void update_tombe(tombe_t *tombe){
+    *REG_VRAMMOD=0x200;
+    *REG_VRAMADDR=ADDR_SCB2+tombe->sprite;
+    *REG_VRAMRW=0xFFF;
+    // --- On regarde s'il faut cacher la tombe
+    if ( tile >= tombe->hide_after_tile ){
+        *REG_VRAMRW=(-250<<7)+tombe->height;
+        *REG_VRAMRW=tombe->x<<7;
+    }
+    else {
+        *REG_VRAMRW=(tombe->y<<7)+tombe->height;
+        *REG_VRAMRW=tombe->x<<7;
+    }
+}
+
+/*********************************
+ * 
+ * Function to Arthur
+ * 
+ *********************************/
+void arthur_display(){
+    *REG_VRAMMOD=0x200;
+    *REG_VRAMADDR=ADDR_SCB2+arthur.sprite;
+    *REG_VRAMRW=0xFFF;
+    *REG_VRAMRW=(arthur.y<<7)+arthur.height;
+    *REG_VRAMRW=arthur.x<<7;
+}
+
+void display_arthur(){
+    
+    u8 i=0, j=0, p=0;
+    u16 sprite_compteur = arthur.sprite;
+
+    for(i=0;i<arthur.width;i++){
+        *REG_VRAMMOD=1;
+        *REG_VRAMADDR=ADDR_SCB1+(sprite_compteur*64);
+        for(j=0;j<arthur.height;j++){
+            *REG_VRAMRW = 256+arthur.tmx[j][i]-1;
+            // --- On va chercher la palette dans le tableau palettes
+            u16 good_palette = 1;
+            for(p=0;p<PALETTE_NUMBER;p++){
+                if ( arthur.tmx[j][i] >= palettes[p][1] ){
+                    good_palette = palettes[p][0];
+                    break;
+                }
+            }
+            *REG_VRAMRW = good_palette<<8;
+        }
+        sprite_compteur++;
+    }
+
+    // Positionnement du sprite global
+    arthur_display();
+
+    // --- On chaine l'ensemble des sprites
+    for (u16 v=1; v<arthur.width; v++) {
+        *REG_VRAMADDR=ADDR_SCB2+arthur.sprite+v;
+        *REG_VRAMRW=0xFFF;
+        *REG_VRAMRW=1<<6; // sticky
+    }
+}
+
+void arthur_display_next_tiles(){
+    u8 i=0, j=0, p=0;
+    *REG_VRAMMOD=1;
+
+    if ( arthur_sens == 1 ){
+        // Right
+        j=0;
+    }
+    else {
+        // Left
+        j=2;
+    }
+    
+    *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+    *REG_VRAMRW = 256+arthur.tmx[j][0+(2*arthur_index)]-1;
+    *REG_VRAMRW = 5<<8;
+    *REG_VRAMRW = 256+arthur.tmx[j+1][0+(2*arthur_index)]-1;
+    *REG_VRAMRW = 5<<8;
+
+    *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+    *REG_VRAMRW = 256+arthur.tmx[j][1+(2*arthur_index)]-1;
+    *REG_VRAMRW = 5<<8;
+    *REG_VRAMRW = 256+arthur.tmx[j+1][1+(2*arthur_index)]-1;
+    *REG_VRAMRW = 5<<8;
+
+    arthur_display();
+}
+
+u16 athur_collisions(){
+    return 0;
+    char str[10];
+    u16 diff=0;
+    if ( arthur_sens == 1 ){
+        if ( background.tmx[12][tile] == 121 ) {
+            // On calcule le nombre de pixels qu'il reste avant la tuile de collision
+            diff = ((tile)*16)+1-(x);
+            snprintf(str, 10, "T %5d", diff); ng_text(2, 9, 0, str);
+            if ( diff <= 12 ){
+                //return background.tmx[12][tile];
+            }
+        }
+    }
+    return 0;
+}
 
 void display_map_from_tmx(layer_t *layer){
 
     u8 i=0, j=0, k=0, l=0, p=0, s=0;
     u16 tile_tmp;
-    char str[10];
 
     u16 sprite_compteur = layer->sprite;
     for(i=0;i<layer->width;i++){
-        
+
         // On cree un sprite pour chaque colonne
         *REG_VRAMMOD=1;
         *REG_VRAMADDR=ADDR_SCB1+(sprite_compteur*64);
@@ -154,15 +366,15 @@ void display_map_from_tmx(layer_t *layer){
             if ( layer->tmx[j][i] == 0 ){
                 s16 temp = *REG_VRAMRW; // Get to set
                 *REG_VRAMRW = SROM_EMPTY_TILE;
-                temp = *REG_VRAMRW; // Palette 
+                temp = *REG_VRAMRW;
                 *REG_VRAMRW = temp;
             }
             else {
                 tile_tmp = layer->tileset_offset+layer->tmx[j][i]-1;
                 *REG_VRAMRW = tile_tmp;
                 // --- On va chercher la palette dans le tableau palettes
-                u16 good_palette = layer->palette;
-                for(p=0;p<4;p++){
+                u16 good_palette = 1;
+                for(p=0;p<PALETTE_NUMBER;p++){
                     if ( layer->tmx[j][i] >= palettes[p][1] ){
                         good_palette = palettes[p][0];
                         break;
@@ -200,16 +412,16 @@ void update_layer(layer_t *layer){
 }
 
 void change_tiles(layer_t *layer, u16 colonne_to_actualize, u16 ecart){
-    u8 p=0;
+    u16 p=0;
     colonne_to_actualize += layer->sprite;
-    u8 j=0;
+    u16 j=0;
     *REG_VRAMMOD=1;
     *REG_VRAMADDR=ADDR_SCB1+(colonne_to_actualize*64);
     for(j=0;j<layer->height;j++){
         *REG_VRAMRW = layer->tileset_offset+layer->tmx[j][tile+ecart]-1;
         // --- On va chercher la palette dans le tableau palettes
-        u16 good_palette = layer->palette;
-        for(p=0;p<4;p++){
+        u16 good_palette = 1; // layer->palette
+        for(p=0;p<PALETTE_NUMBER;p++){
             if ( layer->tmx[j][tile+ecart] >= palettes[p][1] ){
                 good_palette = palettes[p][0];
                 break;
@@ -245,6 +457,8 @@ void check_move_arthur()
     u8 l=(bios_p1current & CNT_LEFT);
     u8 r=(bios_p1current & CNT_RIGHT);
 
+    u8 collision = 0;
+
     joystate[0]=u?'1':'0';
     joystate[1]=d?'1':'0';
     joystate[2]=l?'1':'0';
@@ -256,7 +470,7 @@ void check_move_arthur()
     if (d) { // Bottom
     }
 
-    if (l ) { // Gauche
+    if (l) { // Gauche
 
         prendre_en_compte=1;
         arthur_sens = 0;
@@ -270,26 +484,25 @@ void check_move_arthur()
 
             x--;
             tile = (x>>4)+1;
-
             arthur_absolute_x--;
             background.x++;
             herbe.x++;
-            nuages.x++;
+            tombe1.x++;
+            tombe2.x++;
 
             // --- Update tiles for scrolling
-            if ( (tile-1)<<4 == x ){
-                //change_tiles(&background, tile+10, -12);
-                /*for(t=12;t<236;t+=32){
-                    if ( tile >= t && tile < t+32 ){
-                        //change_tiles(&background, tile-t, -12);
-                        //change_tiles(&herbe, tile-t, -12);
-                    }
-                }*/
-            }
+            //if ( (tile-1)<<4 == x ){
+                //snprintf(str, 10, "T %5d", tile); ng_text(2, 7, 0, str);
+                if ( tile>=12 && x%16 == 0){
+                    change_tiles(&background, tile-tile_distance[tile], -12);
+                    //change_tiles(&herbe, tile-tile_distance[tile], -12);
+                }
+            //}
 
             update_layer(&background);
             update_layer(&herbe);
-            update_layer(&nuages);
+            update_tombe(&tombe1);
+            update_tombe(&tombe2);
         }
     }
 
@@ -298,52 +511,76 @@ void check_move_arthur()
         prendre_en_compte=1;
         arthur_sens = 1;
 
-        /*if ( arthur_absolute_x < 130 ) {
+        if ( arthur_absolute_x < 130 ) {
             if ( arthur_absolute_x > 130 ){
                 x++;
             }
-            //arthur.x++;
+            arthur.x++;
             arthur_absolute_x++;
         }
-        else if ( x < 2110 ){*/
+        else if ( x < 2110 ){
+
+
+        }
 
         if ( x <= x_max ){
 
-            x++;
-            tile = (x>>4)+1;
-            arthur_absolute_x++;
-            background.x--;
-            herbe.x--;
-            nuages.x--;
+            // --- Gestion des collisions
+            collision = athur_collisions();
+            //snprintf(str, 10, "C %5d", collision); ng_text(2, 7, 0, str);
 
-            // --- Update tiles for scrolling
-            if ( (tile-1)<<4 == x ){
-                if ( tile>=12 ){
-                    change_tiles(&background, tile-tile_distance[tile], 20);
-                    change_tiles(&herbe, tile-tile_distance[tile], 20);
-                    hide_sprite_colonne(&nuages, tile-tile_distance[tile]);
+            if ( collision == 0 ) {
+
+                x++;
+                tile = (x>>4)+1;
+                arthur_absolute_x++;
+                background.x--;
+                herbe.x--;
+                tombe1.x--;
+                tombe2.x--;
+                
+                if ( x%16 == 0 ){
+                    // --- Update tiles for scrolling
+                    if ( tile>=12){
+                        change_tiles(&background, tile-tile_distance[tile], 20);
+                        change_tiles(&herbe, tile-tile_distance[tile], 20);
+                        if ( tile<=20){
+                            //hide_sprite_colonne(&nuages, tile-tile_distance[tile]);
+                        }
+                    }
                 }
-            }
 
-            update_layer(&nuages);
-            update_layer(&background);
-            update_layer(&herbe);
+                update_layer(&background);
+                update_layer(&herbe);
+                update_tombe(&tombe1);
+                update_tombe(&tombe2);
+            }
         }
     }
 
     if ( u == 0 && d==0 && l==0 && r==0 ){
         //standby_arthur();
+        arthur_index=0;
+        arthur_display_next_tiles(arthur_index);
     }
 
     if ( prendre_en_compte == 1 ){
-        frames=(frames+1)%60;
-        if ( frames == 1 || frames == 4 || frames == 8 || frames == 12 || frames == 16 || frames == 20 || frames == 24 || frames == 28 || frames == 32 || frames == 36 || frames == 40 || frames == 44 || frames == 48 || frames == 52 || frames == 56 ) {
+
+        frameCount++;
+        if (frameCount>3){
             arthur_index++;
+            frameCount=0;
         }
         const u8 *tiles = arthur_sens?right_tiles:left_tiles;
         if ( arthur_index == 7 ){
             arthur_index=0;
         }
+
+        
+
+        // --- On fait courir Arthur
+        arthur_display_next_tiles(arthur_index);
+        //arthur_display_next_tiles();
         //display_sprite_arthur(tiles[arthur_index]);
     }
 }
@@ -359,6 +596,7 @@ int main(void) {
 
     //arthur_absolute_x = arthur.x;
     x = 0;
+    level = START_LEVEL;
 
     // Init array of tileindex for scrolling
     for(i=0;i<44;i++)
@@ -377,21 +615,58 @@ int main(void) {
     // Init tmx
     for(j = 0; j < 15; j++) {
         for(loop = 0; loop < GNG_LEVEL1_MAP_WIDTH; loop++) {
-            nuages.tmx[j][loop] = tmx_nuages[j][loop];
             background.tmx[j][loop] = tmx_background[j][loop];
             herbe.tmx[j][loop] = tmx_herbe[j][loop];
         }
     }
 
-    display_map_from_tmx(&nuages);
-    display_map_from_tmx(&background);
-    display_map_from_tmx(&herbe);
+    // Init tmx map
+    for(j = 0; j < 15; j++) {
+        for(loop = 0; loop < map.width; loop++) {
+            map.tmx[j][loop] = tmx_map[j][loop];
+        }
+    }
+
+    // Init tmx arthur
+    for(j = 0; j < 6; j++) {
+        for(loop = 0; loop < 16; loop++) {
+            arthur.tmx[j][loop] = tmx_arthur[j][loop];
+        }
+    }
+
+    if ( level == 0 ){
+        display_map_from_tmx(&map);
+        // Pause de 5s
+        for(i=0;i<1000;i++){
+            for(j=0;j<250;j++){}
+        }
+        for(i=0;i<110;i++){
+            map.x-=1;
+            update_layer(&map);
+            ng_wait_vblank();
+        }
+        // Pause de 5s
+        for(i=0;i<1000;i++){
+            for(j=0;j<320;j++){}
+        }
+        level=1;
+    }
+
+    if ( level == 1 ){
+        display_map_from_tmx(&background);
+        display_map_from_tmx(&herbe);
+        display_arthur();
+        display_tombe(&tombe1);
+        display_tombe(&tombe2);
+    }
 
     for(;;) {
         ng_wait_vblank();
         check_move_arthur();
-        //snprintf(str, 15, "Tile %5d", tile); ng_text(2, 2, 0, str);
-        //snprintf(str, 15, "Ecart %5d", tile_distance[tile]); ng_text(2, 4, 0, str);
+        if ( DEBUG == 1 ){
+            snprintf(str, 10, "X %5d", x); ng_text(2, 3, 0, str);
+            snprintf(str, 10, "T %5d", tile); ng_text(2, 5, 0, str);
+        }
     }
 
     return 0;

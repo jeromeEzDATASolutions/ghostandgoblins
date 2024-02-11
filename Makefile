@@ -30,21 +30,9 @@ $(ASSETS)/rom/c1.bin $(ASSETS)/rom/s1.bin:
 	$(MAKE) -C $(ASSETS)
 
 # -------------------------------------------- #
-# --- Nuages                                   #
+# --- Back                                     #
 # -------------------------------------------- #
-sprites/nuages.png: gfx/nuages.png | sprites
-	$(CONVERT) $^ $^ $^ +append -crop 224x48+0+0 +repage -background black -flatten $@
-
-sprites/nuages.c1 sprites/nuages.c2: sprites/nuages.png
-	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
-
-sprites/nuages.pal: sprites/nuages.png
-	$(PALTOOL) $< -o $@
-
-# -------------------------------------------- #
-# --- Level1 Terre1 : 320x320                  #
-# -------------------------------------------- #
-sprites/back.png: gfx/back.png | sprites
+sprites/back.png: gfx/tiles_back.png | sprites
 	$(CONVERT) $^ $^ $^ +append -crop 320x320+0+0 +repage -background black -flatten $@
 
 sprites/back.c1 sprites/back.c2: sprites/back.png
@@ -56,7 +44,7 @@ sprites/back.pal: sprites/back.png
 # -------------------------------------------- #
 # --- Flotte                                   #
 # -------------------------------------------- #
-sprites/flottes.png: gfx/flottes.png | sprites
+sprites/flottes.png: gfx/tiles_flottes.png | sprites
 	$(CONVERT) $^ $^ $^ +append -crop 160x16+0+0 +repage -background black -flatten $@
 
 sprites/flottes.c1 sprites/flottes.c2: sprites/flottes.png
@@ -68,14 +56,51 @@ sprites/flottes.pal: sprites/flottes.png
 # -------------------------------------------- #
 # --- Herbe                                    #
 # -------------------------------------------- #
-sprites/ghost_stage1_herbe.png: gfx/ghost_stage1_herbe.png | sprites
+sprites/herbe.png: gfx/tiles_herbe.png | sprites
 	$(CONVERT) $^ $^ $^ +append -crop 64x64+0+0 +repage -background black -flatten $@
 
-sprites/ghost_stage1_herbe.c1 sprites/ghost_stage1_herbe.c2: sprites/ghost_stage1_herbe.png
+sprites/herbe.c1 sprites/herbe.c2: sprites/herbe.png
 	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
 
-sprites/ghost_stage1_herbe.pal: sprites/ghost_stage1_herbe.png
+sprites/herbe.pal: sprites/herbe.png
 	$(PALTOOL) $< -o $@
+
+# -------------------------------------------- #
+# --- Map                                      #
+# -------------------------------------------- #
+sprites/map.png: gfx/tiles_map.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 144x144+0+0 +repage -background black -flatten $@
+
+sprites/map.c1 sprites/map.c2: sprites/map.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/map.pal: sprites/map.png
+	$(PALTOOL) $< -o $@
+
+# -------------------------------------------- #
+# --- Arthur                                   #
+# -------------------------------------------- #
+sprites/arthur.png: gfx/tiles_arthur.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 256x96+0+0 +repage -background black -flatten $@
+
+sprites/arthur.c1 sprites/arthur.c2: sprites/arthur.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/arthur.pal: sprites/arthur.png
+	$(PALTOOL) $< -o $@
+
+# -------------------------------------------- #
+# --- Nuages                                   #
+# -------------------------------------------- #
+sprites/nuages.png: gfx/tiles_nuages.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 224x48+0+0 +repage -background black -flatten $@
+
+sprites/nuages.c1 sprites/nuages.c2: sprites/nuages.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/nuages.pal: sprites/nuages.png
+	$(PALTOOL) $< -o $@
+
 
 $(ELF):	$(OBJS:%=%.o)
 	$(M68KGCC) -o $@ $^ `pkg-config --libs ngdevkit`
@@ -84,10 +109,12 @@ $(ELF):	$(OBJS:%=%.o)
 	$(M68KGCC) $(NGCFLAGS) -std=gnu99 -fomit-frame-pointer -g -c $< -o $@
 
 main.c: \
-	sprites/nuages.pal \
 	sprites/back.pal \
 	sprites/flottes.pal \
-	sprites/ghost_stage1_herbe.pal \
+	sprites/herbe.pal \
+	sprites/map.pal \
+	sprites/arthur.pal \
+	sprites/nuages.pal \
 
 # sound driver ROM: ngdevkit's nullsound
 MROMSIZE:=131072
@@ -101,18 +128,22 @@ $(VROM): | rom
 # sprite ROM C1 C2: parallax layers
 CROMSIZE:=1048576
 $(CROM1): $(ASSETS)/rom/c1.bin \
-	sprites/nuages.c1 \
 	sprites/back.c1 \
 	sprites/flottes.c1 \
-	sprites/ghost_stage1_herbe.c1 \
+	sprites/herbe.c1 \
+	sprites/map.c1 \
+	sprites/arthur.c1 \
+	sprites/nuages.c1 \
 	| rom
 	cat $(ASSETS)/rom/c1.bin $(filter %.c1,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 
 $(CROM2): $(ASSETS)/rom/c2.bin \
-	sprites/nuages.c2 \
 	sprites/back.c2 \
 	sprites/flottes.c2 \
-	sprites/ghost_stage1_herbe.c2 \
+	sprites/herbe.c2 \
+	sprites/map.c2 \
+	sprites/arthur.c2 \
+	sprites/nuages.c2 \
 	| rom
 	cat $(ASSETS)/rom/c2.bin $(filter %.c2,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 
