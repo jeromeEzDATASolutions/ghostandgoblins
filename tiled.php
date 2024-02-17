@@ -18,7 +18,7 @@ if (file_exists($file)) {
 
                 $display = true;
                 if ($value["@attributes"]["name"] == "herbe" && $ligne_cpt < 14) {
-                    $display = false;
+                    //$display = false;
                 }
 
                 if ($display) {
