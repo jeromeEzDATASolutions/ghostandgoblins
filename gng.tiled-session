@@ -16,10 +16,14 @@
         },
         "arbre.tsx": {
             "scaleInDock": 3.9564,
+            "scaleInEditor": 5.53
+        },
+        "arthur.tsx": {
+            "scaleInDock": 2.6606,
             "scaleInEditor": 6.68
         },
         "back.tsx": {
-            "scaleInDock": 2.6545,
+            "scaleInDock": 2.0899,
             "scaleInEditor": 6.68
         },
         "background2.tsx": {
@@ -27,7 +31,7 @@
             "scaleInEditor": 2.7364
         },
         "flottes.tsx": {
-            "scaleInDock": 1,
+            "scaleInDock": 2.3528,
             "scaleInEditor": 6.68
         },
         "ghost_stage1_herbe.tsx": {
@@ -35,16 +39,26 @@
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 3.2398,
-            "selectedLayer": 1,
+            "scale": 3.0061,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 290.9130193221804,
-                "y": 110.3463176739305
+                "x": 326.6691061508266,
+                "y": 108.9451448720934
             }
         },
+        "map.tsx": {
+            "scaleInDock": 4.3763,
+            "scaleInEditor": 6.68
+        },
         "nuages.tsx": {
+            "dynamicWrapping": false,
             "scaleInDock": 1,
             "scaleInEditor": 6.68
+        },
+        "sprites.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 6.0826,
+            "scaleInEditor": 1
         }
     },
     "last.imagePath": "/Users/ezdata/Documents/ngdevkit/05-scrolling/gfx",
@@ -57,20 +71,24 @@
         "gng-level1.tmx",
         "back.tsx",
         "nuages.tsx",
+        "arthur.tsx",
         "flottes.tsx",
-        "arbre.tsx",
+        "map.tsx",
         "ghost_stage1_herbe.tsx"
     ],
     "project": "gng.tiled-project",
     "property.type": "int",
     "recentFiles": [
-        "gng-level1.tmx",
-        "arbre.tsx",
+        "ghost_stage1_herbe.tsx",
+        "map.tsx",
+        "flottes.tsx",
+        "arthur.tsx",
         "nuages.tsx",
         "back.tsx",
-        "flottes.tsx",
-        "background2.tsx",
-        "ghost_stage1_herbe.tsx"
+        "gng-level1.tmx",
+        "arbre.tsx",
+        "sprites.tsx",
+        "background2.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
