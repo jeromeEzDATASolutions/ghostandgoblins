@@ -39,11 +39,11 @@
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 2.8607,
+            "scale": 2.6063,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 306.91788723039815,
-                "y": 128.46506099905616
+                "x": 345.70080190308096,
+                "y": 94.9622069600583
             }
         },
         "map.tsx": {
@@ -79,13 +79,13 @@
     "project": "gng.tiled-project",
     "property.type": "int",
     "recentFiles": [
-        "gng-level1.tmx",
         "ghost_stage1_herbe.tsx",
         "map.tsx",
         "flottes.tsx",
         "arthur.tsx",
         "nuages.tsx",
         "back.tsx",
+        "gng-level1.tmx",
         "arbre.tsx",
         "sprites.tsx",
         "background2.tsx"
