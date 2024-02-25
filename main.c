@@ -58,7 +58,6 @@
 #define LEVEL1_ECHELLE_TILE5 13
 
 u16 frameCount = 0;
-u16 frameCountY = 0;
 u16 x = 0;
 u16 x_max = (GNG_LEVEL1_MAP_WIDTH-20)*16-1;
 u16 x_max2 = ((GNG_LEVEL1_MAP_WIDTH-20)*16-1)+130;
@@ -415,88 +414,6 @@ void display_arthur(){
     }
 }
 
-void arthur_on_echelle(){
-
-    if ( arthur_sur_echelle == 1 ){        
-
-        if ( 
-            background.tmx[arthur_tile_y][arthur_tile_x] == 13 || 
-            background.tmx[arthur_tile_y][arthur_tile_x] == 14 
-        ){
-            arthur_sommet_echelle = 1;
-
-            *REG_VRAMMOD=1;
-
-            *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-            *REG_VRAMRW = 256+arthur.tmx[6][4]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMRW = 256+arthur.tmx[7][4]-1;
-            *REG_VRAMRW = 5<<8;
-
-            *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-            *REG_VRAMRW = 256+arthur.tmx[6][5]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMRW = 256+arthur.tmx[7][5]-1;
-            *REG_VRAMRW = 5<<8;
-
-            arthur_display();
-        }
-        else if ( 
-            background.tmx[arthur_tile_y][arthur_tile_x] == 0 || 
-            background.tmx[arthur_tile_y][arthur_tile_x] == 0 
-        ){
-            arthur_sommet_echelle = 2;
-            arthur_index=0;
-            arthur_display_next_tiles(arthur_index);
-            //arthur_display();
-        }
-        else {
-            arthur_sommet_echelle = 0;
-            arthur_sur_echelle_count++;
-
-            if ( arthur_sur_echelle_count == 16 ) {
-                arthur_sur_echelle_count = 0;
-            }
-            else if ( arthur_sur_echelle_count >= 8 ) {
-                
-                *REG_VRAMMOD=1;
-
-                *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][0]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][0]-1;
-                *REG_VRAMRW = 5<<8;
-
-                *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][1]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][1]-1;
-                *REG_VRAMRW = 5<<8;
-
-                arthur_display();
-            }
-            else if ( arthur_sur_echelle_count < 8 ) {
-
-                *REG_VRAMMOD=1;
-
-                *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][2]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][2]-1;
-                *REG_VRAMRW = 5<<8;
-
-                *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][3]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][3]-1;
-                *REG_VRAMRW = 5<<8;
-
-                arthur_display();
-            }
-        }
-    }
-}
-
 void arthur_display_next_tiles(){
     u8 i=0, j=0, p=0;
     *REG_VRAMMOD=1;
@@ -542,6 +459,109 @@ u16 athur_collisions(){
         }
     }
     return 0;
+}
+
+void arthur_on_echelle(){
+
+    char str[10];
+
+    if ( arthur_sur_echelle == 1 ){
+
+        if ( background.tmx[arthur_tile_y][arthur_tile_x] == 13 || background.tmx[arthur_tile_y][arthur_tile_x] == 14 ){
+
+            // -----------------------------------------------
+            // --- On est au sommet de l'echelle
+            // -----------------------------------------------
+            arthur_sommet_echelle = 1;
+
+            *REG_VRAMMOD=1;
+
+            *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+            *REG_VRAMRW = 256+arthur.tmx[6][4]-1;
+            *REG_VRAMRW = 5<<8;
+            *REG_VRAMRW = 256+arthur.tmx[7][4]-1;
+            *REG_VRAMRW = 5<<8;
+
+            *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+            *REG_VRAMRW = 256+arthur.tmx[6][5]-1;
+            *REG_VRAMRW = 5<<8;
+            *REG_VRAMRW = 256+arthur.tmx[7][5]-1;
+            *REG_VRAMRW = 5<<8;
+        }
+        else if ( 
+            background.tmx[arthur_tile_y][arthur_tile_x] == 33 || background.tmx[arthur_tile_y][arthur_tile_x] == 34 
+            || background.tmx[arthur_tile_y][arthur_tile_x] == 53 || background.tmx[arthur_tile_y][arthur_tile_x] == 54 
+            || background.tmx[arthur_tile_y][arthur_tile_x] == 73 || background.tmx[arthur_tile_y][arthur_tile_x] == 74 
+            || background.tmx[arthur_tile_y][arthur_tile_x] == 93 || background.tmx[arthur_tile_y][arthur_tile_x] == 94
+        ){
+            // -----------------------------------------------
+            // --- On est sur l'echelle mais pas encore au sommet
+            // -----------------------------------------------
+            arthur_sommet_echelle = 0;
+            arthur_sur_echelle_count++;
+
+            if ( arthur_sur_echelle_count == 16 ) {
+                arthur_sur_echelle_count = 0;
+            }
+            else if ( arthur_sur_echelle_count >= 8 ) {
+                
+                *REG_VRAMMOD=1;
+
+                *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+                *REG_VRAMRW = 256+arthur.tmx[6][0]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[7][0]-1;
+                *REG_VRAMRW = 5<<8;
+
+                *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+                *REG_VRAMRW = 256+arthur.tmx[6][1]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[7][1]-1;
+                *REG_VRAMRW = 5<<8;
+            }
+            else if ( arthur_sur_echelle_count < 8 ) {
+
+                *REG_VRAMMOD=1;
+
+                *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+                *REG_VRAMRW = 256+arthur.tmx[6][2]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[7][2]-1;
+                *REG_VRAMRW = 5<<8;
+
+                *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+                *REG_VRAMRW = 256+arthur.tmx[6][3]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[7][3]-1;
+                *REG_VRAMRW = 5<<8;
+            }
+        }
+        else if ( background.tmx[arthur_tile_y-1][arthur_tile_x] != 13 && background.tmx[arthur_tile_y-1][arthur_tile_x] != 14 ){
+            arthur_sommet_echelle = 2;
+            arthur_index=0;
+            arthur_display_next_tiles(arthur_index);
+            arthur_sur_echelle=0;
+            arthur_devant_echelle=0;
+        }
+    }
+
+    /*
+    else if ( 
+        background.tmx[arthur_tile_y][arthur_tile_x] != 13 && background.tmx[arthur_tile_y][arthur_tile_x] != 14 
+        && background.tmx[arthur_tile_y][arthur_tile_x] != 33 && background.tmx[arthur_tile_y][arthur_tile_x] != 34 
+        && background.tmx[arthur_tile_y][arthur_tile_x] != 53 && background.tmx[arthur_tile_y][arthur_tile_x] != 54 
+        && background.tmx[arthur_tile_y][arthur_tile_x] != 73 && background.tmx[arthur_tile_y][arthur_tile_x] != 74 
+        && background.tmx[arthur_tile_y][arthur_tile_x] != 93 && background.tmx[arthur_tile_y][arthur_tile_x] != 94
+    ){
+        arthur_sommet_echelle = 2;
+        arthur_index=0;
+        arthur_display_next_tiles(arthur_index);
+    }
+    else {
+        arthur_sommet_echelle = 0;
+        
+    }
+    */
 }
 
 void display_map_from_tmx(layer_t *layer){
@@ -664,79 +684,95 @@ void check_move_arthur()
     // ------------------------------------------------------
     if ( u && !arthur_mort) {
 
-        if ( DEBUG == 1 ){
-            //snprintf(str, 20, "%3d %3d %3d", arthur_tile_y, tile+8, background.tmx[arthur_tile_y][tile+8]); ng_text(2, 11, 0, str);
-        }
-
         if ( arthur_devant_echelle == 1){
 
-            frameCountY++;
-            
-            if(background.tmx[arthur_tile_y][tile+8] == 13 || background.tmx[arthur_tile_y][tile+8] == 14 
-            || background.tmx[arthur_tile_y][tile+8] == 33 || background.tmx[arthur_tile_y][tile+8] == 34 
-            || background.tmx[arthur_tile_y][tile+8] == 53 || background.tmx[arthur_tile_y][tile+8] == 54 
-            || background.tmx[arthur_tile_y][tile+8] == 73 || background.tmx[arthur_tile_y][tile+8] == 74 
-            || background.tmx[arthur_tile_y][tile+8] == 93 || background.tmx[arthur_tile_y][tile+8] == 94 ){
+            arthur_sur_echelle=1;
+            arthur_absolute_y++;
+            arthur_tile_y = 12-((arthur_absolute_y)>>4);
+            arthur_on_echelle();
 
-                // --- On positionne Arthur au centre de l'echelle
-                //arthur.x = (arthur_tile_x*16)+8;
-
-                arthur_tile_y = 12-((arthur_absolute_y)>>4);
-                arthur_sur_echelle=1;
-                frameCountY=0;
-                arthur_absolute_y++;
-
-                // --- On anime Arthur qui monte sur l'échelle
-                arthur_on_echelle();
-
-                if ( arthur_sommet_echelle == 0 ){
-                    arthur.y++;
-                }
-                else if ( arthur_sommet_echelle == 2 ){
-                    arthur.y+=17;
-                }
-                
-                /*if ( arthur.y%3 == 0 && 1==2 ){
-                    background.y--;
-                    herbe.y--;
-                    update_layer(&background);
-                    update_layer(&herbe);
-                }*/
+            if ( arthur_sommet_echelle == 0 ){
+                arthur.y++;
             }
-            else {
-                arthur_sur_echelle=0;
+            else if ( arthur_sommet_echelle == 2 ){
+                arthur.y+=17;
+            }
+
+            arthur_display();
+
+            if ( arthur.y%3 == 0 && 1==2 ){
+                background.y--;
+                herbe.y--;
+                update_layer(&background);
+                update_layer(&herbe);
             }
         }
-
-        arthur_display();
+        
     }
 
     // ------------------------------------------------------
     // --- BOTTOM
     // ------------------------------------------------------
     if ( d && !arthur_mort) {
+
+        if ( arthur_absolute_y > 0 ){
+
+            if ( arthur_devant_echelle == 1 ){
+
+                arthur_sur_echelle=1;
+                arthur_absolute_y--;
+                arthur_tile_y = 12-((arthur_absolute_y)>>4);
+                arthur_on_echelle();
+
+                if ( arthur_sommet_echelle == 0 ){
+                    arthur.y--;
+                }
+                else if ( arthur_sommet_echelle == 2 ){
+                    arthur.y-=17;
+                }
+
+                arthur_display();
+            }
+
+        }
+        else {
+            arthur_sur_echelle = 0;
+
+            // On affiche Arthur en position 8
+            *REG_VRAMMOD=1;
+
+            *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+            *REG_VRAMRW = 256+arthur.tmx[8][arthur_sens==1?0:2]-1;
+            *REG_VRAMRW = 5<<8;
+            *REG_VRAMRW = 256+arthur.tmx[9][arthur_sens==1?0:2]-1;
+            *REG_VRAMRW = 5<<8;
+
+            *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+            *REG_VRAMRW = 256+arthur.tmx[8][arthur_sens==1?1:3]-1;
+            *REG_VRAMRW = 5<<8;
+            *REG_VRAMRW = 256+arthur.tmx[9][arthur_sens==1?1:3]-1;
+            *REG_VRAMRW = 5<<8;
+
+            arthur_display();
+        }
+    }
+
+    if ( d && !arthur_mort && 1==2) {
         if ( arthur_absolute_y > 0 ) {
             if ( arthur_devant_echelle == 1 ){
 
-                frameCountY++;
-
-                // On affiche Arthur montant à l'échelle
-                // TODO
-
                 if(
-                    background.tmx[arthur_tile_y+1][tile+8] == 13 || background.tmx[arthur_tile_y+1][tile+8] == 14 
-                || background.tmx[arthur_tile_y+1][tile+8] == 33 || background.tmx[arthur_tile_y+1][tile+8] == 34 
-                || background.tmx[arthur_tile_y+1][tile+8] == 53 || background.tmx[arthur_tile_y+1][tile+8] == 54 
-                || background.tmx[arthur_tile_y+1][tile+8] == 73 || background.tmx[arthur_tile_y+1][tile+8] == 74 
-                || background.tmx[arthur_tile_y+1][tile+8] == 93 || background.tmx[arthur_tile_y+1][tile+8] == 94 
-                || (arthur_absolute_y>0 && arthur_absolute_y < 16)
-                || (arthur_absolute_y>80 && arthur_absolute_y < 96)
+                    background.tmx[arthur_tile_y+1][arthur_tile_x] == 13 || background.tmx[arthur_tile_y+1][arthur_tile_x] == 14 
+                    || background.tmx[arthur_tile_y+1][arthur_tile_x] == 33 || background.tmx[arthur_tile_y+1][arthur_tile_x] == 34 
+                    || background.tmx[arthur_tile_y+1][arthur_tile_x] == 53 || background.tmx[arthur_tile_y+1][arthur_tile_x] == 54 
+                    || background.tmx[arthur_tile_y+1][arthur_tile_x] == 73 || background.tmx[arthur_tile_y+1][arthur_tile_x] == 74 
+                    || background.tmx[arthur_tile_y+1][arthur_tile_x] == 93 || background.tmx[arthur_tile_y+1][arthur_tile_x] == 94 
+                    || (arthur_absolute_y>0 && arthur_absolute_y < 16)
+                    || (arthur_absolute_y>80 && arthur_absolute_y < 97)
                 ){
                     arthur_sur_echelle=1;
-                    frameCountY=0;
                     arthur_absolute_y--;
                     arthur_tile_y = 12-((arthur_absolute_y)>>4);
-                    
 
                     // --- On anime Arthur qui monte sur l'échelle
                     arthur_on_echelle();
@@ -811,7 +847,6 @@ void check_move_arthur()
 
         prendre_en_compte=1;
         arthur_sens = 0;
-        arthur_devant_echelle = 0;
 
         if ( x > 0 && arthur_absolute_x < x_max2 ){
 
@@ -832,22 +867,12 @@ void check_move_arthur()
                 }
             //}
 
-            if ( 
-                background.tmx[arthur_tile_y][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE1 // Echelle pour monter
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE2 
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE3 
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE4 
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE5 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE1 // Echelle sous les pieds pour descendre
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE2 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE3 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE4 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_left] == LEVEL1_ECHELLE_TILE5 
-            ){
-                arthur_devant_echelle = 1;
+            if ( arthur_absolute_y == 0 ){
+                arthur_devant_echelle = 0;
+                if ( background.tmx[arthur_tile_y][arthur_tile_x] == 93 || background.tmx[arthur_tile_y][arthur_tile_x] == 94 ){
+                    arthur_devant_echelle = 1;
+                }
             }
-
-            //snprintf(str, 10, "ECH %5d", arthur_devant_echelle); ng_text(2, 10, 0, str);
 
             update_layer(&background);
             update_layer(&herbe);
@@ -871,7 +896,6 @@ void check_move_arthur()
 
         prendre_en_compte=1;
         arthur_sens = 1;
-        arthur_devant_echelle = 0;
 
         if ( arthur_absolute_x < 130 ) {
             if ( arthur_absolute_x > 130 ){
@@ -892,28 +916,14 @@ void check_move_arthur()
                 arthur_mort=1;
             }
             
-            if ( 
-                background.tmx[arthur_tile_y][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE1 // Echelle pour monter
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE2 
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE3 
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE4 
-                || background.tmx[arthur_tile_y][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE5 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE1 // Echelle sous les pieds pour descendre
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE2 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE3 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE4 
-                || background.tmx[arthur_tile_y+1][arthur_tile_x_for_right] == LEVEL1_ECHELLE_TILE5 
-            ){
-                // --- On tombe dans l'eau et on recommence au début du niveau
-                arthur_devant_echelle = 1;
+            if ( arthur_absolute_y == 0 ){
+                arthur_devant_echelle = 0;
+                if ( background.tmx[arthur_tile_y][arthur_tile_x] == 93 || background.tmx[arthur_tile_y][arthur_tile_x] == 94 ){
+                    arthur_devant_echelle = 1;
+                }
             }
 
-            if ( DEBUG == 1 ){
-                //snprintf(str, 10, "C %5d", collision); ng_text(2, 9, 0, str);
-            }
-
-            if ( collision == 0 && arthur_mort==0) {
-
+            if ( collision == 0 && arthur_mort==0 ) {
                 x++;
                 tile = FIX_TILEX(x);
                 arthur_absolute_x++;
@@ -921,15 +931,13 @@ void check_move_arthur()
                 herbe.x--;
                 //tombes[0].x--;
                 //tombes[1].x--;
-
-//                if ( x%16 == 0 ){
+                //if ( x%16 == 0 ){
                     // --- Update tiles for scrolling
                     if ( tile>=12){
                         change_tiles(&background, tile-tile_distance[tile], 20);
                         change_tiles(&herbe, tile-tile_distance[tile], 20);
                     }
-//                }
-
+                //}
                 update_layer(&background);
                 update_layer(&herbe);
                 //update_tombe(&tombes[0]);
@@ -1106,11 +1114,11 @@ int main(void) {
         }
 
         if ( DEBUG == 1 ){
-            snprintf(str, 10, "XXX %3d", x); ng_text(2, 3, 0, str);
-            snprintf(str, 10, "TTT %5d", arthur_absolute_x); ng_text(2, 5, 0, str);
-            snprintf(str, 10, "T %5d", arthur_tile_x); ng_text(2, 7, 0, str);
-            snprintf(str, 10, "T %5d", background.tmx[arthur_tile_y][arthur_tile_x]); ng_text(2, 9, 0, str);
-            snprintf(str, 10, "ADE %5d", arthur_sommet_echelle); ng_text(2, 11, 0, str);
+            snprintf(str, 10, "ADE %4d", arthur_devant_echelle); ng_text(2, 3, 0, str);
+            snprintf(str, 10, "AAY %4d", arthur_absolute_y); ng_text(2, 5, 0, str);
+            snprintf(str, 10, "ATX %4d", background.tmx[arthur_tile_y][arthur_tile_x]); ng_text(2, 7, 0, str);
+            //snprintf(str, 10, "T %5d", arthur_tile_x); ng_text(2, 7, 0, str);
+            //snprintf(str, 10, "ADE %5d", arthur_sommet_echelle); ng_text(2, 11, 0, str);
             //snprintf(str, 10, "ASE %5d", arthur_sur_echelle_count); ng_text(2, 13, 0, str);
             //snprintf(str, 10, "Til %5d", background.tmx[arthur_tile_y+1][tile+8]); ng_text(2, 9, 0, str);
         }
