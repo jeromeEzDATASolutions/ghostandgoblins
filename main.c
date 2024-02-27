@@ -44,8 +44,8 @@
 #define SROM_EMPTY_TILE 255
 
 // Parameters of the first level
-#define DEBUG 1
-#define START_LEVEL 1
+#define DEBUG 0
+#define START_LEVEL 0
 #define GNG_LEVEL1_MAP_WIDTH 224
 #define PALETTE_NUMBER 6
 
@@ -750,7 +750,10 @@ void check_move_arthur()
             else {
                 arthur.arthur_devant_echelle=0;
                 arthur.arthur_sur_echelle=0;
-                if ( arthur_absolute_y >= 80){
+                if ( arthur_absolute_y >= 160){
+                    arthur.floor=160;
+                }
+                else if ( arthur_absolute_y >= 80){
                     arthur.floor=80;
                 }
                 else {
@@ -834,7 +837,10 @@ void check_move_arthur()
             arthur.y--;
         }
 
-        if ( arthur_absolute_y >= 80){
+        if ( arthur_absolute_y >= 160){
+            arthur.floor=160;
+        }
+        else if ( arthur_absolute_y >= 80){
             arthur.floor=80;
         }
         else {
@@ -861,7 +867,7 @@ void check_move_arthur()
     // ------------------------------------------------------
     // --- LEFT
     // ------------------------------------------------------
-    if ( l && !d && !arthur_mort && !arthur.arthur_sur_echelle ) {
+    if ( l && !d && !arthur_mort && !arthur.arthur_sur_echelle && arthur.action != ARTHUR_TOMBE ) {
 
         prendre_en_compte=1;
         arthur_sens = 0;
@@ -890,6 +896,10 @@ void check_move_arthur()
                 if ( background.tmx[arthur_tile_y][arthur_tile_x] == 93 || background.tmx[arthur_tile_y][arthur_tile_x] == 94 ){
                     arthur.arthur_devant_echelle = 1;
                 }
+            }
+
+            if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 ){
+                arthur.action = ARTHUR_TOMBE;
             }
 
             update_layer(&background);
@@ -930,11 +940,11 @@ void check_move_arthur()
 
             if ( background.tmx[14][tile+8] == LEVEL1_FLOTTE_TILE ){
                 // --- On tombe dans l'eau et on recommence au début du niveau
-                arthur.y-=1;
-                arthur_mort=1;
+                //arthur.y-=1;
+                //arthur_mort=1;
             }
 
-            if ( arthur_absolute_y > 0 && background.tmx[arthur_tile_y+1][arthur_tile_x] == 0 ){
+            if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 ){
                 arthur.action = ARTHUR_TOMBE;
             }
             
@@ -1147,16 +1157,33 @@ int main(void) {
         }
 
         if ( arthur.action == ARTHUR_TOMBE ){
-            if ( arthur_absolute_y == 0 ){
-                arthur.action = 0;
-                arthur.floor = 0;
+
+            arthur_tile_y = 12-((arthur_absolute_y)>>4);
+
+            if ( tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 ){
+                arthur.y-=4;
+                arthur_absolute_y-=4;
+                arthur_display();
+
+                arthur.floor=0;
+                if ( arthur_absolute_y >= 80){
+                    arthur.floor=80;
+                }
+                else if ( arthur_absolute_y >= 160){
+                    arthur.floor=160;
+                }
+            }
+            else if ( arthur_absolute_y > arthur.floor ){
+                arthur.y-=4;
+                arthur_absolute_y-=4;
+                arthur_display();
             }
             else {
-                            arthur.y-=1;
-            arthur_absolute_y-=1;
-            arthur_display();
-
+                //arthur_absolute_y = 0;
+                arthur.action = 0;
+                //arthur.floor = 0;
             }
+
         }
 
         if ( DEBUG == 1 ){
