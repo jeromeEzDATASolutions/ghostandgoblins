@@ -101,6 +101,19 @@ sprites/nuages.c1 sprites/nuages.c2: sprites/nuages.png
 sprites/nuages.pal: sprites/nuages.png
 	$(PALTOOL) $< -o $@
 
+# -------------------------------------------- #
+# --- Ghost                                    #
+# -------------------------------------------- #
+sprites/ghost.png: gfx/tiles_ghost.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 192x64+0+0 +repage -background black -flatten $@
+
+sprites/ghost.c1 sprites/ghost.c2: sprites/ghost.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/ghost.pal: sprites/ghost.png
+	$(PALTOOL) $< -o $@
+
+
 
 $(ELF):	$(OBJS:%=%.o)
 	$(M68KGCC) -o $@ $^ `pkg-config --libs ngdevkit`
@@ -115,6 +128,7 @@ main.c: \
 	sprites/map.pal \
 	sprites/arthur.pal \
 	sprites/nuages.pal \
+	sprites/ghost.pal \
 
 # sound driver ROM: ngdevkit's nullsound
 MROMSIZE:=131072
@@ -134,6 +148,7 @@ $(CROM1): $(ASSETS)/rom/c1.bin \
 	sprites/map.c1 \
 	sprites/arthur.c1 \
 	sprites/nuages.c1 \
+	sprites/ghost.c1 \
 	| rom
 	cat $(ASSETS)/rom/c1.bin $(filter %.c1,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 
@@ -144,6 +159,7 @@ $(CROM2): $(ASSETS)/rom/c2.bin \
 	sprites/map.c2 \
 	sprites/arthur.c2 \
 	sprites/nuages.c2 \
+	sprites/ghost.c2 \
 	| rom
 	cat $(ASSETS)/rom/c2.bin $(filter %.c2,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 
