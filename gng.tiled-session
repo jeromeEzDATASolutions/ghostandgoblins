@@ -34,16 +34,20 @@
             "scaleInDock": 2.3528,
             "scaleInEditor": 6.68
         },
+        "ghost.tsx": {
+            "scaleInDock": 2.036,
+            "scaleInEditor": 4.5559
+        },
         "ghost_stage1_herbe.tsx": {
             "scaleInDock": 3.6676,
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 2.6063,
-            "selectedLayer": 0,
+            "scale": 2.3522,
+            "selectedLayer": 3,
             "viewCenter": {
-                "x": 345.70080190308096,
-                "y": 94.9622069600583
+                "x": 484.6526655896608,
+                "y": 119.67519768727149
             }
         },
         "map.tsx": {
@@ -74,11 +78,13 @@
         "arthur.tsx",
         "flottes.tsx",
         "map.tsx",
-        "ghost_stage1_herbe.tsx"
+        "ghost_stage1_herbe.tsx",
+        "ghost.tsx"
     ],
     "project": "gng.tiled-project",
     "property.type": "int",
     "recentFiles": [
+        "ghost.tsx",
         "ghost_stage1_herbe.tsx",
         "map.tsx",
         "flottes.tsx",
