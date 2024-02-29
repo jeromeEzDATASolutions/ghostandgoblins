@@ -223,10 +223,12 @@ arthur_t arthur = {
 // ----------------------------------
 // Gestion des fantomes
 // ----------------------------------
+#define GHOST_NOMBRE 6
 #define GHOST_HIDDEN 1
 #define GHOST_APPARAIT 2
 #define GHOST_MARCHE 3
 #define GHOST_MORT 4
+#define GHOST_DISPARAIT 5
 #define GHOST_GAUCHE 2
 #define GHOST_DROITE 0
 
@@ -241,26 +243,106 @@ typedef struct _ghost_t {
     u8 offset;
     s16 cpt;
     u8 sens;
+    u16 modulo;
+    u16 apparition_x1;
+    u16 apparition_x2;
 } ghost_t;
 
-ghost_t ghost = {
-    .sprite = 39,
-    .width = 2,
-    .height = 2,
-    .floor = 0, 
-    .state = GHOST_HIDDEN, 
-    .x = 280,
-    .y = -178,
-    .offset = 0, 
-    .cpt = 0,
-    .sens = GHOST_GAUCHE, 
+ghost_t ghosts[] = {
+    {
+        .sprite = 39,
+        .width = 2,
+        .height = 2,
+        .floor = 0, 
+        .state = GHOST_HIDDEN, 
+        .x = 280,
+        .y = -178,
+        .offset = 0, 
+        .cpt = 0,
+        .sens = GHOST_GAUCHE, 
+        .modulo = 55, 
+        .apparition_x1 = 240, 
+        .apparition_x2 = 40, 
+    }, 
+    {
+        .sprite = 41,
+        .width = 2,
+        .height = 2,
+        .floor = 0, 
+        .state = GHOST_HIDDEN, 
+        .x = 280,
+        .y = -178,
+        .offset = 0, 
+        .cpt = 0,
+        .sens = GHOST_DROITE, 
+        .modulo = 139, 
+        .apparition_x1 = 400, 
+        .apparition_x2 = 40, 
+    }, 
+    {
+        .sprite = 43,
+        .width = 2,
+        .height = 2,
+        .floor = 0, 
+        .state = GHOST_HIDDEN, 
+        .x = 280,
+        .y = -178,
+        .offset = 0, 
+        .cpt = 0,
+        .sens = GHOST_DROITE, 
+        .modulo = 600, 
+        .apparition_x1 = 400, 
+        .apparition_x2 = 40, 
+    }, 
+    {
+        .sprite = 45,
+        .width = 2,
+        .height = 2,
+        .floor = 0, 
+        .state = GHOST_HIDDEN, 
+        .x = 280,
+        .y = -178,
+        .offset = 0, 
+        .cpt = 0,
+        .sens = GHOST_DROITE, 
+        .modulo = 800, 
+        .apparition_x1 = 400, 
+        .apparition_x2 = 40, 
+    }, 
+    {
+        .sprite = 47,
+        .width = 2,
+        .height = 2,
+        .floor = 0, 
+        .state = GHOST_HIDDEN, 
+        .x = 280,
+        .y = -178,
+        .offset = 0, 
+        .cpt = 0,
+        .sens = GHOST_DROITE, 
+        .modulo = 1000, 
+        .apparition_x1 = 400, 
+        .apparition_x2 = 270, 
+    }, 
+    {
+        .sprite = 49,
+        .width = 2,
+        .height = 2,
+        .floor = 0, 
+        .state = GHOST_HIDDEN, 
+        .x = 280,
+        .y = -178,
+        .offset = 0, 
+        .cpt = 0,
+        .sens = GHOST_DROITE, 
+        .modulo = 60, 
+        .apparition_x1 = 400, 
+        .apparition_x2 = 100, 
+    }, 
 };
 
-
-
-
 layer_t herbe = {
-    .sprite = 41,
+    .sprite = 51,
     .width = 32,
     .height = 15,
     .x = 0,
@@ -625,128 +707,176 @@ void arthur_on_echelle(){
  * Function to Arthur
  * 
  *********************************/
-void ghost_display(){
+void ghost_display(ghost_t *g){
     *REG_VRAMMOD=0x200;
-    *REG_VRAMADDR=ADDR_SCB2+ghost.sprite;
+    *REG_VRAMADDR=ADDR_SCB2+g->sprite;
     *REG_VRAMRW=0xFFF;
-    *REG_VRAMRW=(ghost.y<<7)+ghost.height;
-    *REG_VRAMRW=ghost.x<<7;
+    *REG_VRAMRW=(g->y<<7)+g->height;
+    *REG_VRAMRW=g->x<<7;
 }
 
-void display_ghost(){
+void display_ghost(ghost_t *g){
 
-    if ( ghost.state == GHOST_APPARAIT ){
+    static const u8 ghost_right_offset[]={0,1,2,3,4,5,6};
+    static const u8 ghost_left_offset[]={4,3,2,1,0,0,0};
+
+    if ( g->state == GHOST_APPARAIT ){
 
         // --- On fait monter le compteur
-        ghost.cpt++;
+        g->cpt++;
 
-        if ( ghost.cpt % 15 == 0 ){
-            ghost.offset++;
-            if ( ghost.offset == 5 ){
-                ghost.state = GHOST_MARCHE;
-                ghost.cpt = 0;
+        if ( g->cpt % 15 == 0 ){
+            g->offset++;
+            if ( g->offset == 6 ){
+                g->state = GHOST_MARCHE;
+                g->cpt = 0;
             }
         }
     
         // --- On fait apparaitre le ghost
-        u16 sprite_compteur = ghost.sprite;
+        u16 sprite_compteur = g->sprite;
         *REG_VRAMMOD=1;
 
-        *REG_VRAMADDR=ADDR_SCB1+(ghost.sprite*64);
-        *REG_VRAMRW = 256+tmx_arthur[11][0+(ghost.width*ghost.offset)]-1;
+        *REG_VRAMADDR=ADDR_SCB1+(g->sprite*64);
+        *REG_VRAMRW = 256+tmx_arthur[11][0+(g->width*ghost_right_offset[g->offset])]-1;
         *REG_VRAMRW = 7<<8;
-        *REG_VRAMRW = 256+tmx_arthur[12][0+(ghost.width*ghost.offset)]-1;
-        *REG_VRAMRW = 7<<8;
-
-        *REG_VRAMADDR=ADDR_SCB1+((ghost.sprite+1)*64);
-        *REG_VRAMRW = 256+tmx_arthur[11][1+(ghost.width*ghost.offset)]-1;
-        *REG_VRAMRW = 7<<8;
-        *REG_VRAMRW = 256+tmx_arthur[12][1+(ghost.width*ghost.offset)]-1;
+        *REG_VRAMRW = 256+tmx_arthur[12][0+(g->width*ghost_right_offset[g->offset])]-1;
         *REG_VRAMRW = 7<<8;
 
-        ghost_display();
+        *REG_VRAMADDR=ADDR_SCB1+((g->sprite+1)*64);
+        *REG_VRAMRW = 256+tmx_arthur[11][1+(g->width*ghost_right_offset[g->offset])]-1;
+        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 256+tmx_arthur[12][1+(g->width*ghost_right_offset[g->offset])]-1;
+        *REG_VRAMRW = 7<<8;
+
+        ghost_display(g);
 
         // --- On chaine l'ensemble des sprites
-        for (u16 v=1; v<ghost.width; v++) {
-            *REG_VRAMADDR=ADDR_SCB2+ghost.sprite+v;
+        for (u16 v=1; v<g->width; v++) {
+            *REG_VRAMADDR=ADDR_SCB2+g->sprite+v;
             *REG_VRAMRW=0xFFF;
             *REG_VRAMRW=1<<6; // sticky
         }
 
-        if ( ghost.offset == 5 ){
-            ghost.offset = 4;
+        if ( g->offset == 6 ){
+            g->offset = 5;
         }
     }
-    else if ( ghost.state == GHOST_MARCHE ){
+    else if ( g->state == GHOST_MARCHE ){
 
         // --- On determine le sens
-        //ghost.sens = GHOST_DROITE;
-        if ( ghost.x >= arthur.x+10 && arthur_absolute_y == 0 ){
-            ghost.sens = GHOST_GAUCHE;
+        // g->sens = GHOST_DROITE;
+        if ( g->x >= arthur.x+10 && arthur_absolute_y == 0 ){
+            g->sens = GHOST_GAUCHE;
         }
-        else if ( arthur.x >= ghost.x+10 && arthur_absolute_y == 0 ){
-            ghost.sens = GHOST_DROITE;
+        else if ( arthur.x >= g->x+10 && arthur_absolute_y == 0 ){
+            g->sens = GHOST_DROITE;
         }
 
-        if ( ghost.sens == GHOST_GAUCHE && ghost.x <= 0 ){
-            ghost.sens = GHOST_DROITE;
+        if ( g->sens == GHOST_GAUCHE && g->x <= 0 ){
+            g->sens = GHOST_DROITE;
         }
-        else if ( ghost.sens == GHOST_DROITE && ghost.x >= 300 ){
-            ghost.sens = GHOST_GAUCHE;
+        else if ( g->sens == GHOST_DROITE && g->x >= 300 ){
+            g->sens = GHOST_GAUCHE;
         }
 
         // --- On fait monter le compteur
-        ghost.cpt++;
+        g->cpt++;
 
-        if ( ghost.cpt % 2 == 0 ){
-            if ( ghost.sens == GHOST_DROITE ){
-                ghost.x++;
+        if ( g->cpt % 2 == 0 ){
+            if ( g->sens == GHOST_DROITE ){
+                g->x++;
             } else {
-                ghost.x--;
+                g->x--;
             }
         }
 
-        if ( ghost.cpt % 8 == 0 ){
+        if ( g->cpt % 8 == 0 ){
 
-            u16 sprite_compteur = ghost.sprite;
+            u16 sprite_compteur = g->sprite;
             *REG_VRAMMOD=1;
 
-            *REG_VRAMADDR=ADDR_SCB1+(ghost.sprite*64);
-            *REG_VRAMRW = 256+tmx_arthur[11+ghost.sens][0+(ghost.width*ghost.offset)]-1;
+            *REG_VRAMADDR=ADDR_SCB1+(g->sprite*64);
+            *REG_VRAMRW = 256+tmx_arthur[11+g->sens][0+(g->width*g->offset)]-1;
             *REG_VRAMRW = 7<<8;
-            *REG_VRAMRW = 256+tmx_arthur[12+ghost.sens][0+(ghost.width*ghost.offset)]-1;
-            *REG_VRAMRW = 7<<8;
-
-            *REG_VRAMADDR=ADDR_SCB1+((ghost.sprite+1)*64);
-            *REG_VRAMRW = 256+tmx_arthur[11+ghost.sens][1+(ghost.width*ghost.offset)]-1;
-            *REG_VRAMRW = 7<<8;
-            *REG_VRAMRW = 256+tmx_arthur[12+ghost.sens][1+(ghost.width*ghost.offset)]-1;
+            *REG_VRAMRW = 256+tmx_arthur[12+g->sens][0+(g->width*g->offset)]-1;
             *REG_VRAMRW = 7<<8;
 
-            if ( ghost.offset == 4 ){
-                ghost.offset = 5;
+            *REG_VRAMADDR=ADDR_SCB1+((g->sprite+1)*64);
+            *REG_VRAMRW = 256+tmx_arthur[11+g->sens][1+(g->width*g->offset)]-1;
+            *REG_VRAMRW = 7<<8;
+            *REG_VRAMRW = 256+tmx_arthur[12+g->sens][1+(g->width*g->offset)]-1;
+            *REG_VRAMRW = 7<<8;
+
+            if ( g->offset == 5 ){
+                g->offset = 6;
             }
             else {
-                ghost.offset = 4;
+                g->offset = 5;
             }
         }
 
-        ghost_display();
+        if ( g->cpt == 500 ){
+            g->state = GHOST_DISPARAIT;
+            g->offset = 0;
+            g->cpt = 0;
+        }
+
+        ghost_display(g);
+    }
+    else if ( g->state == GHOST_DISPARAIT ){
+    
+        // --- On fait monter le compteur
+        g->cpt++;
+
+        if ( g->cpt % 15 == 0 ){
+            g->offset++;
+            if ( g->offset == 6 ){
+                g->state = GHOST_HIDDEN;
+                g->cpt = 0;
+            }
+        }
+    
+        // --- On fait apparaitre le ghost
+        u16 sprite_compteur = g->sprite;
+        *REG_VRAMMOD=1;
+
+        *REG_VRAMADDR=ADDR_SCB1+(g->sprite*64);
+        *REG_VRAMRW = 256+tmx_arthur[11][0+(g->width*ghost_left_offset[g->offset])]-1;
+        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 256+tmx_arthur[12][0+(g->width*ghost_left_offset[g->offset])]-1;
+        *REG_VRAMRW = 7<<8;
+
+        *REG_VRAMADDR=ADDR_SCB1+((g->sprite+1)*64);
+        *REG_VRAMRW = 256+tmx_arthur[11][1+(g->width*ghost_left_offset[g->offset])]-1;
+        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 256+tmx_arthur[12][1+(g->width*ghost_left_offset[g->offset])]-1;
+        *REG_VRAMRW = 7<<8;
+
+        ghost_display(g);
+
+        // --- On chaine l'ensemble des sprites
+        for (u16 v=1; v<g->width; v++) {
+            *REG_VRAMADDR=ADDR_SCB2+g->sprite+v;
+            *REG_VRAMRW=0xFFF;
+            *REG_VRAMRW=1<<6; // sticky
+        }
+
+        if ( g->offset == 6 ){
+            g->offset = 0;
+        }
     }
 }
 
-void ghost_move_left(ghost_t *ghost) {
-    ghost->x--;
-    ghost_display();
+void ghost_move_left(ghost_t *ghost1) {
+    ghost1->x--;
+    ghost_display(ghost1);
 }
 
-void ghost_move_right(ghost_t *ghost) {
-    ghost->x++;
-    ghost_display();
+void ghost_move_right(ghost_t *ghost1) {
+    ghost1->x++;
+    ghost_display(ghost1);
 }
-
-
-
 
 void display_map_from_tmx(layer_t *layer){
 
@@ -1079,7 +1209,11 @@ void check_move_arthur()
 
             update_layer(&background);
             update_layer(&herbe);
-            ghost_move_right(&ghost);
+
+            for(i=0;i<GHOST_NOMBRE;i++){
+                ghost_move_right(&ghosts[i]);
+            }
+
             //update_tombe(&tombes[0]);
             //update_tombe(&tombes[1]);
         }
@@ -1116,8 +1250,8 @@ void check_move_arthur()
 
             if ( background.tmx[14][tile+8] == LEVEL1_FLOTTE_TILE ){
                 // --- On tombe dans l'eau et on recommence au début du niveau
-                //arthur.y-=1;
-                //arthur_mort=1;
+                arthur.y-=1;
+                arthur_mort=1;
             }
 
             if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 ){
@@ -1154,7 +1288,10 @@ void check_move_arthur()
                 //}
                 update_layer(&background);
                 update_layer(&herbe);
-                ghost_move_left(&ghost);
+                
+                for(i=0;i<GHOST_NOMBRE;i++){
+                    ghost_move_left(&ghosts[i]);
+                }
                 
                 //update_tombe(&tombes[0]);
                 //update_tombe(&tombes[1]);
@@ -1290,11 +1427,39 @@ int main(void) {
 
         if ( arthur_can_play == 1 ){
 
-            if ( arthur_absolute_x == 200 ){
-                ghost.state = GHOST_APPARAIT;
+            // --------------------------------------------------------
+            // --- START : Affichage des ghosts
+            // --------------------------------------------------------
+            if ( arthur_absolute_x == 1200 ){
+                for(i=0;i<GHOST_NOMBRE;i++){
+                    if ( ghosts[i].state != GHOST_HIDDEN ){
+                        ghosts[i].state = GHOST_DISPARAIT;
+                        ghosts[i].offset=0;
+                        ghosts[i].cpt=0;
+                    }
+                }
             }
-
-            display_ghost();
+            else if ( arthur_absolute_x < 1200 ){
+                for(i=0;i<GHOST_NOMBRE;i++){
+                    if ( ghosts[i].state == GHOST_HIDDEN && (arthur_absolute_x%ghosts[i].modulo == 0) ){
+                        if ( arthur_sens == 1 ){
+                            ghosts[i].x = ghosts[i].apparition_x1;
+                            ghosts[i].sens = GHOST_GAUCHE;
+                        }
+                        else {
+                            ghosts[i].x = ghosts[i].apparition_x2;
+                            ghosts[i].sens = GHOST_DROITE;
+                        }
+                        ghosts[i].state = GHOST_APPARAIT;
+                    }
+                }
+            }
+            for(i=0;i<GHOST_NOMBRE;i++){
+                display_ghost(&ghosts[i]);
+            }
+            // --------------------------------------------------------
+            // --- END : Affichage des ghosts
+            // --------------------------------------------------------
 
             if ( arthur_mort == 0 ) {
                 check_move_arthur();
@@ -1334,6 +1499,10 @@ int main(void) {
                 clear_tombe(&tombes[0]);
                 clear_tombe(&tombes[1]);
 
+                for(i=0;i<GHOST_NOMBRE;i++){
+                    ghosts[i].state = GHOST_HIDDEN;
+                }
+
                 // Pause de 5s
                 for(i=0;i<700;i++){
                     for(j=0;j<320;j++){}
@@ -1372,9 +1541,8 @@ int main(void) {
         }
 
         if ( DEBUG == 1 ){
-            snprintf(str, 10, "X %4d", arthur_absolute_y); ng_text(2, 3, 0, str);
-            snprintf(str, 10, "G %4d", ghost.x); ng_text(2, 5, 0, str);
-            snprintf(str, 10, "S %4d", ghost.sens); ng_text(2, 7, 0, str);
+            snprintf(str, 10, "X %4d", arthur_absolute_x); ng_text(2, 3, 0, str);
+            //snprintf(str, 10, "S %4d", ghost1.cpt); ng_text(2, 7, 0, str);
             //snprintf(str, 10, "TIL %4d", background.tmx[arthur_tile_y][arthur_tile_x]); ng_text(2, 5, 0, str);
             //snprintf(str, 10, "TIL %4d", background.tmx[arthur_tile_y+1][arthur_tile_x]); ng_text(2, 7, 0, str);
             //snprintf(str, 10, "ADE %4d", arthur.arthur_devant_echelle); ng_text(2, 9, 0, str);
