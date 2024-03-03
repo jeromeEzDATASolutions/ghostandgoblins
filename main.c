@@ -45,8 +45,8 @@
 
 // Parameters of the first level
 #define DEBUG 1
-#define DEBUG_DISPLAY_GHOSTS 0
 #define START_LEVEL 1
+#define DEBUG_DISPLAY_GHOSTS 1
 #define GNG_LEVEL1_MAP_WIDTH 224
 #define PALETTE_NUMBER 7
 
@@ -62,6 +62,8 @@
 #define ARTHUR_DEBOUT 0
 #define ARTHUR_TOMBE 100
 #define ARTHUR_SAUT_VERTICAL 101
+#define ARTHUR_SAUT_HORIZONTAL_GAUCHE 102
+#define ARTHUR_SAUT_HORIZONTAL_DROITE 103
 
 u16 frameCount = 0;
 u16 x = 0;
@@ -469,9 +471,7 @@ void display_tombe(tombe_t *tombe){
         *REG_VRAMADDR=ADDR_SCB2+tombe->sprite+v;
         *REG_VRAMRW=0xFFF;
         *REG_VRAMRW=1<<6; // sticky
-    }
-
-    
+    }    
 }
 
 void update_tombe(tombe_t *tombe){
@@ -721,11 +721,21 @@ u8 ghost_display(ghost_t *g){
         return(0);
     }
 
-    *REG_VRAMMOD=0x200;
-    *REG_VRAMADDR=ADDR_SCB2+g->sprite;
-    *REG_VRAMRW=0xFFF;
-    *REG_VRAMRW=(g->y<<7)+g->height;
-    *REG_VRAMRW=g->x<<7;
+    if ( g->state == GHOST_HIDDEN ){
+        // --- On cache les ghosts ou mortvivants quand ils ne doivent pas etre montrés à l'écran
+        *REG_VRAMMOD=0x200;
+        *REG_VRAMADDR=ADDR_SCB2+g->sprite;
+        *REG_VRAMRW=0xFFF;
+        *REG_VRAMRW=(-300<<7)+g->height;
+        *REG_VRAMRW=(200<<7);
+    }
+    else {
+        *REG_VRAMMOD=0x200;
+        *REG_VRAMADDR=ADDR_SCB2+g->sprite;
+        *REG_VRAMRW=0xFFF;
+        *REG_VRAMRW=(g->y<<7)+g->height;
+        *REG_VRAMRW=(g->x<<7);
+    }
 }
 
 u8 display_ghost(ghost_t *g){
@@ -1014,6 +1024,7 @@ void check_move_arthur()
     u8 l=(bios_p1current & CNT_LEFT);
     u8 r=(bios_p1current & CNT_RIGHT);
     u8 b1=(bios_p1current & 16);
+    u8 b2=(bios_p1current & 32);
 
     u8 collision = 0;
 
@@ -1024,21 +1035,31 @@ void check_move_arthur()
 
     if ( arthur.action == ARTHUR_SAUT_VERTICAL ){
         arthur.cpt1++;
-        if(
-            arthur.cpt1 %2 == 0
-        ){
-
+        if((arthur.cpt1%2) == 0){
             *REG_VRAMMOD=1;
             *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-            *REG_VRAMRW = 256+arthur.tmx[4][0]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMRW = 256+arthur.tmx[5][0]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-            *REG_VRAMRW = 256+arthur.tmx[4][1]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMRW = 256+arthur.tmx[5][1]-1;
-            *REG_VRAMRW = 5<<8;
+            if ( arthur_sens == 1 ){
+                *REG_VRAMRW = 256+arthur.tmx[4][4]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[5][4]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+                *REG_VRAMRW = 256+arthur.tmx[4][5]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[5][5]-1;
+                *REG_VRAMRW = 5<<8;
+            }
+            else {
+                *REG_VRAMRW = 256+arthur.tmx[4][6]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[5][6]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+                *REG_VRAMRW = 256+arthur.tmx[4][7]-1;
+                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+arthur.tmx[5][7]-1;
+                *REG_VRAMRW = 5<<8;
+            }
 
             arthur.y+=saut_vertical[arthur.cpt2];
 
@@ -1059,7 +1080,7 @@ void check_move_arthur()
         // ------------------------------------------------------
         // --- TOP
         // ------------------------------------------------------
-        if ( u && !arthur_mort && arthur.action != ARTHUR_TOMBE ) {
+        if ( u && !arthur_mort && arthur.action != ARTHUR_TOMBE && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ) {
 
             if ( arthur.arthur_devant_echelle == 1 || arthur.arthur_sur_echelle == 1 ){
 
@@ -1141,7 +1162,7 @@ void check_move_arthur()
         // ------------------------------------------------------
         // --- BOTTOM
         // ------------------------------------------------------
-        if ( d && !arthur_mort && arthur.action != ARTHUR_TOMBE ){
+        if ( d && !arthur_mort && arthur.action != ARTHUR_TOMBE && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ){
 
             if ( arthur_absolute_y == 0 || arthur_absolute_y == 80 ){
                 arthur.arthur_sur_echelle=0;
@@ -1233,7 +1254,13 @@ void check_move_arthur()
         // ------------------------------------------------------
         // --- LEFT
         // ------------------------------------------------------
-        if ( l && !d && !arthur_mort && !arthur.arthur_sur_echelle && arthur.action != ARTHUR_TOMBE ) {
+        if ( (l && !d && !arthur_mort && !arthur.arthur_sur_echelle && arthur.action != ARTHUR_TOMBE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ) || arthur.action == ARTHUR_SAUT_HORIZONTAL_GAUCHE ) {
+
+            if ( b2 && arthur.action == ARTHUR_DEBOUT ){
+                arthur.action = ARTHUR_SAUT_HORIZONTAL_GAUCHE;
+                arthur.cpt1=0;
+                arthur.cpt2=0;
+            }
 
             prendre_en_compte=1;
             arthur_sens = 0;
@@ -1264,7 +1291,7 @@ void check_move_arthur()
                     }
                 }
 
-                if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 ){
+                if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ){
                     arthur.action = ARTHUR_TOMBE;
                 }
 
@@ -1284,6 +1311,32 @@ void check_move_arthur()
                 arthur_display();
             }
 
+            // --- Saut horizontal vers la gauche
+            if ( arthur.action == ARTHUR_SAUT_HORIZONTAL_GAUCHE ){
+                arthur.cpt1++;
+                if((arthur.cpt1%2) == 0){
+                    *REG_VRAMMOD=1;
+                    *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+                    *REG_VRAMRW = 256+arthur.tmx[4][2]-1;
+                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+arthur.tmx[5][2]-1;
+                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+                    *REG_VRAMRW = 256+arthur.tmx[4][3]-1;
+                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+arthur.tmx[5][3]-1;
+                    *REG_VRAMRW = 5<<8;
+                    arthur.y+=saut_vertical[arthur.cpt2];
+                    if ( arthur.cpt2 == 19 ){
+                        arthur.action=0;
+                        arthur.cpt2=0;
+                    }
+                    else {
+                        arthur.cpt2++;
+                    }
+                }
+            }            
+
             arthur_tile_x = FIX_TILEX(arthur_absolute_x);
             arthur_tile_x_for_left = FIX_TILEX(arthur_absolute_x-5);
         }
@@ -1291,7 +1344,13 @@ void check_move_arthur()
         // ------------------------------------------------------
         // --- RIGHT
         // ------------------------------------------------------
-        if ( r && !d && !arthur_mort && !arthur.arthur_sur_echelle && arthur.action != ARTHUR_TOMBE ) {
+        if ( (r && !d && !arthur_mort && !arthur.arthur_sur_echelle && arthur.action != ARTHUR_TOMBE && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE) || arthur.action == ARTHUR_SAUT_HORIZONTAL_DROITE) {
+
+            if ( b2 && arthur.action == ARTHUR_DEBOUT ){
+                arthur.action = ARTHUR_SAUT_HORIZONTAL_DROITE;
+                arthur.cpt1=0;
+                arthur.cpt2=0;
+            }
 
             prendre_en_compte=1;
             arthur_sens = 1;
@@ -1309,13 +1368,13 @@ void check_move_arthur()
                 // collision = athur_collisions();
                 collision = collision_tombe();
 
-                if ( background.tmx[14][tile+8] == LEVEL1_FLOTTE_TILE ){
-                    // --- On tombe dans l'eau et on recommence au début du niveau
+                // --- On tombe dans l'eau et on recommence au début du niveau
+                if ( background.tmx[14][tile+8] == LEVEL1_FLOTTE_TILE && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ){
                     arthur.y-=1;
                     arthur_mort=1;
                 }
 
-                if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 ){
+                if ( arthur_absolute_y > 0 && tmx_sol[arthur_tile_y+1][arthur_tile_x] == 0 && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ){
                     arthur.action = ARTHUR_TOMBE;
                 }
                 
@@ -1333,6 +1392,7 @@ void check_move_arthur()
                 }
 
                 if ( collision == 0 && arthur_mort==0 ) {
+
                     x++;
                     tile = FIX_TILEX(x);
                     arthur_absolute_x++;
@@ -1360,8 +1420,34 @@ void check_move_arthur()
             }
             else if ( arthur_absolute_x <= 3555 ){
                 arthur_absolute_x++;
-                arthur.x++;
+                arthur.x++;                
                 arthur_display();
+            }
+
+            // --- Saut horizontal vers la droite
+            if ( arthur.action == ARTHUR_SAUT_HORIZONTAL_DROITE ){
+                arthur.cpt1++;
+                if((arthur.cpt1%2) == 0){
+                    *REG_VRAMMOD=1;
+                    *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
+                    *REG_VRAMRW = 256+arthur.tmx[4][0]-1;
+                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+arthur.tmx[5][0]-1;
+                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
+                    *REG_VRAMRW = 256+arthur.tmx[4][1]-1;
+                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+arthur.tmx[5][1]-1;
+                    *REG_VRAMRW = 5<<8;
+                    arthur.y+=saut_vertical[arthur.cpt2];
+                    if ( arthur.cpt2 == 19 ){
+                        arthur.action=0;
+                        arthur.cpt2=0;
+                    }
+                    else {
+                        arthur.cpt2++;
+                    }
+                }
             }
 
             arthur_tile_x = FIX_TILEX(arthur_absolute_x);
@@ -1373,13 +1459,13 @@ void check_move_arthur()
             // ------------------------------------------------------
             // --- Saut Arthur
             // ------------------------------------------------------
-            if ( b1 && arthur.action == ARTHUR_DEBOUT ){
+            if ( b2 && arthur.action == ARTHUR_DEBOUT ){
                 arthur.action = ARTHUR_SAUT_VERTICAL;
                 arthur.cpt1=0;
                 arthur.cpt2=0;
             }
 
-            if ( arthur.arthur_sur_echelle != 1 ){
+            if ( arthur.arthur_sur_echelle != 1 && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ){
                 arthur_index=0;
                 arthur_display_next_tiles(arthur_index);
             }
@@ -1392,22 +1478,26 @@ void check_move_arthur()
 
         if ( prendre_en_compte == 1 ){
 
-            frameCount++;
-            if (frameCount>3){
-                arthur_index++;
-                frameCount=0;
-            }
-            const u8 *tiles = arthur_sens?right_tiles:left_tiles;
-            if ( arthur_index == 7 ){
-                arthur_index=0;
-            }
+            if ( arthur.action == ARTHUR_DEBOUT ){
+                frameCount++;
+                if (frameCount>3){
+                    arthur_index++;
+                    frameCount=0;
+                }
+                const u8 *tiles = arthur_sens?right_tiles:left_tiles;
+                if ( arthur_index == 7 ){
+                    arthur_index=0;
+                }
 
-            // --- On fait courir Arthur
-            arthur_display_next_tiles(arthur_index);
-            //arthur_display_next_tiles();
-            //display_sprite_arthur(tiles[arthur_index]);
+                // --- On fait courir Arthur
+                //arthur_display_next_tiles();
+                //display_sprite_arthur(tiles[arthur_index]);
+                arthur_display_next_tiles(arthur_index);
+            }
+            else {
+                arthur_display();
+            }
         }
-
     }
 }
 
@@ -1616,8 +1706,8 @@ int main(void) {
         }
 
         if ( DEBUG == 1 ){
-            snprintf(str, 10, "Y %4d", arthur.y); ng_text(2, 3, 0, str);
-            snprintf(str, 10, "CPT2 %4d", arthur.cpt2); ng_text(2, 5, 0, str);
+            snprintf(str, 10, "A.Y %4d", arthur.y); ng_text(2, 3, 0, str);
+            snprintf(str, 10, "CPT2 %4d", bios_p1current); ng_text(2, 5, 0, str);
             //snprintf(str, 10, "S %4d", ghost1.cpt); ng_text(2, 7, 0, str);
             //snprintf(str, 10, "TIL %4d", background.tmx[arthur_tile_y][arthur_tile_x]); ng_text(2, 5, 0, str);
             //snprintf(str, 10, "TIL %4d", background.tmx[arthur_tile_y+1][arthur_tile_x]); ng_text(2, 7, 0, str);

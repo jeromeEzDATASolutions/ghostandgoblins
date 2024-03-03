@@ -43,11 +43,11 @@
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 2.3522,
-            "selectedLayer": 0,
+            "scale": 5.379,
+            "selectedLayer": 3,
             "viewCenter": {
-                "x": 489.3291386786838,
-                "y": 114.57359068106453
+                "x": 169.82710540992753,
+                "y": 91.18795315114335
             }
         },
         "map.tsx": {
