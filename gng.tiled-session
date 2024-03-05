@@ -20,7 +20,15 @@
         },
         "arthur.tsx": {
             "scaleInDock": 2.6606,
-            "scaleInEditor": 6.68
+            "scaleInEditor": 2.8861
+        },
+        "arthur1.tsx": {
+            "scaleInDock": 2.3877,
+            "scaleInEditor": 1
+        },
+        "arthur2.tsx": {
+            "scaleInDock": 2.4995,
+            "scaleInEditor": 4.8093
         },
         "back.tsx": {
             "scaleInDock": 2.0899,
@@ -43,11 +51,11 @@
             "scaleInEditor": 1
         },
         "gng-level1.tmx": {
-            "scale": 5.379,
+            "scale": 3.8378,
             "selectedLayer": 3,
             "viewCenter": {
-                "x": 169.82710540992753,
-                "y": 91.18795315114335
+                "x": 196.85757465214442,
+                "y": 110.0891135546407
             }
         },
         "map.tsx": {
@@ -75,26 +83,28 @@
         "gng-level1.tmx",
         "back.tsx",
         "nuages.tsx",
-        "arthur.tsx",
         "flottes.tsx",
         "map.tsx",
         "ghost_stage1_herbe.tsx",
-        "ghost.tsx"
+        "ghost.tsx",
+        "arthur1.tsx",
+        "arthur2.tsx"
     ],
     "project": "gng.tiled-project",
     "property.type": "int",
     "recentFiles": [
+        "arthur2.tsx",
+        "arthur1.tsx",
         "ghost.tsx",
         "ghost_stage1_herbe.tsx",
         "map.tsx",
         "flottes.tsx",
-        "arthur.tsx",
         "nuages.tsx",
         "back.tsx",
         "gng-level1.tmx",
+        "arthur.tsx",
         "arbre.tsx",
-        "sprites.tsx",
-        "background2.tsx"
+        "sprites.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {

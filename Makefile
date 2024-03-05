@@ -78,18 +78,6 @@ sprites/map.pal: sprites/map.png
 	$(PALTOOL) $< -o $@
 
 # -------------------------------------------- #
-# --- Arthur                                   #
-# -------------------------------------------- #
-sprites/arthur.png: gfx/tiles_arthur.png | sprites
-	$(CONVERT) $^ $^ $^ +append -crop 256x96+0+0 +repage -background black -flatten $@
-
-sprites/arthur.c1 sprites/arthur.c2: sprites/arthur.png
-	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
-
-sprites/arthur.pal: sprites/arthur.png
-	$(PALTOOL) $< -o $@
-
-# -------------------------------------------- #
 # --- Nuages                                   #
 # -------------------------------------------- #
 sprites/nuages.png: gfx/tiles_nuages.png | sprites
@@ -113,6 +101,29 @@ sprites/ghost.c1 sprites/ghost.c2: sprites/ghost.png
 sprites/ghost.pal: sprites/ghost.png
 	$(PALTOOL) $< -o $@
 
+# -------------------------------------------- #
+# --- Arthur1                                  #
+# -------------------------------------------- #
+sprites/arthur1.png: gfx/tiles_arthur1.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 480x64+0+0 +repage -background black -flatten $@
+
+sprites/arthur1.c1 sprites/arthur1.c2: sprites/arthur1.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/arthur1.pal: sprites/arthur1.png
+	$(PALTOOL) $< -o $@
+
+# -------------------------------------------- #
+# --- Arthur2                                  #
+# -------------------------------------------- #
+sprites/arthur2.png: gfx/tiles_arthur2.png | sprites
+	$(CONVERT) $^ $^ $^ +append -crop 480x64+0+0 +repage -background black -flatten $@
+
+sprites/arthur2.c1 sprites/arthur2.c2: sprites/arthur2.png
+	$(TILETOOL) --sprite -c $< -o $@ $(@:%.c1=%).c2
+
+sprites/arthur2.pal: sprites/arthur2.png
+	$(PALTOOL) $< -o $@
 
 
 $(ELF):	$(OBJS:%=%.o)
@@ -126,9 +137,10 @@ main.c: \
 	sprites/flottes.pal \
 	sprites/herbe.pal \
 	sprites/map.pal \
-	sprites/arthur.pal \
 	sprites/nuages.pal \
 	sprites/ghost.pal \
+	sprites/arthur1.pal \
+	sprites/arthur2.pal \
 
 # sound driver ROM: ngdevkit's nullsound
 MROMSIZE:=131072
@@ -146,9 +158,10 @@ $(CROM1): $(ASSETS)/rom/c1.bin \
 	sprites/flottes.c1 \
 	sprites/herbe.c1 \
 	sprites/map.c1 \
-	sprites/arthur.c1 \
 	sprites/nuages.c1 \
 	sprites/ghost.c1 \
+	sprites/arthur1.c1 \
+	sprites/arthur2.c1 \
 	| rom
 	cat $(ASSETS)/rom/c1.bin $(filter %.c1,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 
@@ -157,9 +170,10 @@ $(CROM2): $(ASSETS)/rom/c2.bin \
 	sprites/flottes.c2 \
 	sprites/herbe.c2 \
 	sprites/map.c2 \
-	sprites/arthur.c2 \
 	sprites/nuages.c2 \
 	sprites/ghost.c2 \
+	sprites/arthur1.c2 \
+	sprites/arthur2.c2 \
 	| rom
 	cat $(ASSETS)/rom/c2.bin $(filter %.c2,$^) > $@ && $(TRUNCATE) -s $(CROMSIZE) $@
 

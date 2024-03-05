@@ -44,11 +44,11 @@
 #define SROM_EMPTY_TILE 255
 
 // Parameters of the first level
-#define DEBUG 1
+#define DEBUG 0
 #define START_LEVEL 1
 #define DEBUG_DISPLAY_GHOSTS 1
 #define GNG_LEVEL1_MAP_WIDTH 224
-#define PALETTE_NUMBER 7
+#define PALETTE_NUMBER 8
 
 // Collisions
 #define LEVEL1_FLOTTE_TILE 402
@@ -106,9 +106,10 @@ const u16 clut[][16]= {
     #include "sprites/flottes.pal"
     #include "sprites/herbe.pal"
     #include "sprites/map.pal"
-    #include "sprites/arthur.pal"
     #include "sprites/nuages.pal"
     #include "sprites/ghost.pal"
+    #include "sprites/arthur1.pal"
+    #include "sprites/arthur2.pal"
 };
 
 void init_palette() {
@@ -144,9 +145,9 @@ typedef struct _arthur_t {
     u16 tmx[10][16];
     s16 cpt1;
     s16 cpt2;
+    s8 version; // Correspond à la ligne à partir de laquelle il faut afficher Arthur : 0 pour l'armure, 4 sans l'armure
+    s8 palette;
 } arthur_t;
-
-
 
 // --- Declaration des tombes
 #define GNG_LEVEL1_TOMBES_COUNT 2
@@ -196,8 +197,9 @@ tombe_t tombes[] = {
 u16 tile_distance[GNG_LEVEL1_MAP_WIDTH];
 
 u16 palettes[PALETTE_NUMBER][2] = {
-    {7, 646},
-    {6, 604},
+    {8, 718},
+    {7, 598},
+    {6, 550},
     {5, 508},
     {4, 427},
     {3, 411},
@@ -228,6 +230,8 @@ arthur_t arthur = {
     .tmx = {},
     .cpt1 = 0, 
     .cpt2 = 0, 
+    .version = 0, 
+    .palette = 7, 
 };
 
 // ----------------------------------
@@ -518,7 +522,7 @@ int collision_flottes(){
 void arthur_display(){
     *REG_VRAMMOD=0x200;
     *REG_VRAMADDR=ADDR_SCB2+arthur.sprite;
-    *REG_VRAMRW=0xFFF;
+    *REG_VRAMRW=0xFFF; // scaling
     *REG_VRAMRW=(arthur.y<<7)+arthur.height;
     *REG_VRAMRW=arthur.x<<7;
 }
@@ -531,17 +535,9 @@ void display_arthur(){
     for(i=0;i<arthur.width;i++){
         *REG_VRAMMOD=1;
         *REG_VRAMADDR=ADDR_SCB1+(sprite_compteur*64);
-        for(j=0;j<arthur.height;j++){
-            *REG_VRAMRW = 256+arthur.tmx[j][i]-1;
-            // --- On va chercher la palette dans le tableau palettes
-            u16 good_palette = 1;
-            for(p=0;p<PALETTE_NUMBER;p++){
-                if ( arthur.tmx[j][i] >= palettes[p][1] ){
-                    good_palette = palettes[p][0];
-                    break;
-                }
-            }
-            *REG_VRAMRW = good_palette<<8;
+        for(j=arthur.version;j<arthur.height+arthur.version;j++){
+            *REG_VRAMRW = 256+tmx_arthur[j][i]-1;
+            *REG_VRAMRW = arthur.palette<<8;
         }
         sprite_compteur++;
     }
@@ -563,24 +559,24 @@ void arthur_display_next_tiles(){
 
     if ( arthur_sens == 1 ){
         // Right
-        j=0;
+        j=0+arthur.version;
     }
     else {
         // Left
-        j=2;
+        j=2+arthur.version;
     }
     
     *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-    *REG_VRAMRW = 256+arthur.tmx[j][0+(2*arthur_index)]-1;
-    *REG_VRAMRW = 5<<8;
-    *REG_VRAMRW = 256+arthur.tmx[j+1][0+(2*arthur_index)]-1;
-    *REG_VRAMRW = 5<<8;
+    *REG_VRAMRW = 256+tmx_arthur[j][0+(2*arthur_index)]-1;
+    *REG_VRAMRW = arthur.palette<<8;
+    *REG_VRAMRW = 256+tmx_arthur[j+1][0+(2*arthur_index)]-1;
+    *REG_VRAMRW = arthur.palette<<8;
 
     *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-    *REG_VRAMRW = 256+arthur.tmx[j][1+(2*arthur_index)]-1;
-    *REG_VRAMRW = 5<<8;
-    *REG_VRAMRW = 256+arthur.tmx[j+1][1+(2*arthur_index)]-1;
-    *REG_VRAMRW = 5<<8;
+    *REG_VRAMRW = 256+tmx_arthur[j][1+(2*arthur_index)]-1;
+    *REG_VRAMRW = arthur.palette<<8;
+    *REG_VRAMRW = 256+tmx_arthur[j+1][1+(2*arthur_index)]-1;
+    *REG_VRAMRW = arthur.palette<<8;
 
     arthur_display();
 }
@@ -619,16 +615,16 @@ void arthur_on_echelle(){
             *REG_VRAMMOD=1;
 
             *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-            *REG_VRAMRW = 256+arthur.tmx[6][4]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMRW = 256+arthur.tmx[7][4]-1;
-            *REG_VRAMRW = 5<<8;
+            *REG_VRAMRW = 256+tmx_arthur[6][4]-1;
+            *REG_VRAMRW = arthur.palette<<8;
+            *REG_VRAMRW = 256+tmx_arthur[7][4]-1;
+            *REG_VRAMRW = arthur.palette<<8;
 
             *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-            *REG_VRAMRW = 256+arthur.tmx[6][5]-1;
-            *REG_VRAMRW = 5<<8;
-            *REG_VRAMRW = 256+arthur.tmx[7][5]-1;
-            *REG_VRAMRW = 5<<8;
+            *REG_VRAMRW = 256+tmx_arthur[6][5]-1;
+            *REG_VRAMRW = arthur.palette<<8;
+            *REG_VRAMRW = 256+tmx_arthur[7][5]-1;
+            *REG_VRAMRW = arthur.palette<<8;
         }
         else if ( 
             background.tmx[arthur_tile_y][arthur_tile_x] == 33 || background.tmx[arthur_tile_y][arthur_tile_x] == 34 
@@ -650,32 +646,32 @@ void arthur_on_echelle(){
                 *REG_VRAMMOD=1;
 
                 *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][0]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][0]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version][22]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][23]-1;
+                *REG_VRAMRW = arthur.palette<<8;
 
                 *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][1]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][1]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version][22]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][23]-1;
+                *REG_VRAMRW = arthur.palette<<8;
             }
             else if ( arthur_sur_echelle_count < 8 ) {
 
                 *REG_VRAMMOD=1;
 
                 *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][2]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][2]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][22]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][23]-1;
+                *REG_VRAMRW = arthur.palette<<8;
 
                 *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[6][3]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[7][3]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][23]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][23]-1;
+                *REG_VRAMRW = arthur.palette<<8;
             }
         }
         else if ( background.tmx[arthur_tile_y-1][arthur_tile_x] != 13 && background.tmx[arthur_tile_y-1][arthur_tile_x] != 14 ){
@@ -766,15 +762,15 @@ u8 display_ghost(ghost_t *g){
 
         *REG_VRAMADDR=ADDR_SCB1+(g->sprite*64);
         *REG_VRAMRW = 256+tmx_arthur[11][0+(g->width*ghost_right_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
         *REG_VRAMRW = 256+tmx_arthur[12][0+(g->width*ghost_right_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
 
         *REG_VRAMADDR=ADDR_SCB1+((g->sprite+1)*64);
         *REG_VRAMRW = 256+tmx_arthur[11][1+(g->width*ghost_right_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
         *REG_VRAMRW = 256+tmx_arthur[12][1+(g->width*ghost_right_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
 
         ghost_display(g);
 
@@ -825,15 +821,15 @@ u8 display_ghost(ghost_t *g){
 
             *REG_VRAMADDR=ADDR_SCB1+(g->sprite*64);
             *REG_VRAMRW = 256+tmx_arthur[11+g->sens][0+(g->width*g->offset)]-1;
-            *REG_VRAMRW = 7<<8;
+            *REG_VRAMRW = 6<<8;
             *REG_VRAMRW = 256+tmx_arthur[12+g->sens][0+(g->width*g->offset)]-1;
-            *REG_VRAMRW = 7<<8;
+            *REG_VRAMRW = 6<<8;
 
             *REG_VRAMADDR=ADDR_SCB1+((g->sprite+1)*64);
             *REG_VRAMRW = 256+tmx_arthur[11+g->sens][1+(g->width*g->offset)]-1;
-            *REG_VRAMRW = 7<<8;
+            *REG_VRAMRW = 6<<8;
             *REG_VRAMRW = 256+tmx_arthur[12+g->sens][1+(g->width*g->offset)]-1;
-            *REG_VRAMRW = 7<<8;
+            *REG_VRAMRW = 6<<8;
 
             if ( g->offset == 5 ){
                 g->offset = 6;
@@ -870,15 +866,15 @@ u8 display_ghost(ghost_t *g){
 
         *REG_VRAMADDR=ADDR_SCB1+(g->sprite*64);
         *REG_VRAMRW = 256+tmx_arthur[11][0+(g->width*ghost_left_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
         *REG_VRAMRW = 256+tmx_arthur[12][0+(g->width*ghost_left_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
 
         *REG_VRAMADDR=ADDR_SCB1+((g->sprite+1)*64);
         *REG_VRAMRW = 256+tmx_arthur[11][1+(g->width*ghost_left_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
         *REG_VRAMRW = 256+tmx_arthur[12][1+(g->width*ghost_left_offset[g->offset])]-1;
-        *REG_VRAMRW = 7<<8;
+        *REG_VRAMRW = 6<<8;
 
         ghost_display(g);
 
@@ -1033,32 +1029,44 @@ void check_move_arthur()
     joystate[2]=l?'1':'0';
     joystate[3]=r?'1':'0';
 
+    // --- Button 1
+    if ( b1 ) {
+        if ( arthur.version == 0 ){
+            arthur.version=4;
+            arthur.palette=8;
+        }
+        else if ( arthur.version == 4 ){
+            arthur.version=0;
+            arthur.palette=7;
+        }
+    }
+
     if ( arthur.action == ARTHUR_SAUT_VERTICAL ){
         arthur.cpt1++;
         if((arthur.cpt1%2) == 0){
             *REG_VRAMMOD=1;
             *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
             if ( arthur_sens == 1 ){
-                *REG_VRAMRW = 256+arthur.tmx[4][4]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[5][4]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version][18]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][18]-1;
+                *REG_VRAMRW = arthur.palette<<8;
                 *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[4][5]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[5][5]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version][19]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][19]-1;
+                *REG_VRAMRW = arthur.palette<<8;
             }
             else {
-                *REG_VRAMRW = 256+arthur.tmx[4][6]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[5][6]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][18]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][18]-1;
+                *REG_VRAMRW = arthur.palette<<8;
                 *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[4][7]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[5][7]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][19]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][19]-1;
+                *REG_VRAMRW = arthur.palette<<8;
             }
 
             arthur.y+=saut_vertical[arthur.cpt2];
@@ -1101,32 +1109,32 @@ void check_move_arthur()
                         *REG_VRAMMOD=1;
 
                         *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][0]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][0]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
 
                         *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][1]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][1]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
                     }
                     else if ( arthur_sur_echelle_count < 8 ) {
 
                         *REG_VRAMMOD=1;
 
                         *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][2]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][2]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
 
                         *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][3]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][3]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
                     }
 
                     arthur.arthur_sur_echelle=1;
@@ -1184,32 +1192,32 @@ void check_move_arthur()
                         *REG_VRAMMOD=1;
 
                         *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][0]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][0]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
 
                         *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][1]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][1]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
                     }
                     else if ( arthur_sur_echelle_count < 8 ) {
 
                         *REG_VRAMMOD=1;
 
                         *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][2]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][2]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][22]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
 
                         *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                        *REG_VRAMRW = 256+arthur.tmx[6][3]-1;
-                        *REG_VRAMRW = 5<<8;
-                        *REG_VRAMRW = 256+arthur.tmx[7][3]-1;
-                        *REG_VRAMRW = 5<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
+                        *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][23]-1;
+                        *REG_VRAMRW = arthur.palette<<8;
                     }
 
                 arthur.arthur_sur_echelle=1;
@@ -1237,15 +1245,15 @@ void check_move_arthur()
             if ( arthur.arthur_sur_echelle == 0 && arthur_absolute_y == arthur.floor ){
                 *REG_VRAMMOD=1;
                 *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                *REG_VRAMRW = 256+arthur.tmx[8][arthur_sens==1?0:2]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[9][arthur_sens==1?0:2]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur_sens==1?arthur.version:arthur.version+2][20]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur_sens==1?arthur.version+1:arthur.version+3][20]-1;
+                *REG_VRAMRW = arthur.palette<<8;
                 *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                *REG_VRAMRW = 256+arthur.tmx[8][arthur_sens==1?1:3]-1;
-                *REG_VRAMRW = 5<<8;
-                *REG_VRAMRW = 256+arthur.tmx[9][arthur_sens==1?1:3]-1;
-                *REG_VRAMRW = 5<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur_sens==1?arthur.version:arthur.version+2][21]-1;
+                *REG_VRAMRW = arthur.palette<<8;
+                *REG_VRAMRW = 256+tmx_arthur[arthur_sens==1?arthur.version+1:arthur.version+3][21]-1;
+                *REG_VRAMRW = arthur.palette<<8;
             }
 
             arthur_display();
@@ -1317,15 +1325,15 @@ void check_move_arthur()
                 if((arthur.cpt1%2) == 0){
                     *REG_VRAMMOD=1;
                     *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                    *REG_VRAMRW = 256+arthur.tmx[4][2]-1;
-                    *REG_VRAMRW = 5<<8;
-                    *REG_VRAMRW = 256+arthur.tmx[5][2]-1;
-                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][16]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][16]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
                     *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                    *REG_VRAMRW = 256+arthur.tmx[4][3]-1;
-                    *REG_VRAMRW = 5<<8;
-                    *REG_VRAMRW = 256+arthur.tmx[5][3]-1;
-                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version+2][17]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version+3][17]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
                     arthur.y+=saut_vertical[arthur.cpt2];
                     if ( arthur.cpt2 == 19 ){
                         arthur.action=0;
@@ -1430,15 +1438,15 @@ void check_move_arthur()
                 if((arthur.cpt1%2) == 0){
                     *REG_VRAMMOD=1;
                     *REG_VRAMADDR=ADDR_SCB1+(arthur.sprite*64);
-                    *REG_VRAMRW = 256+arthur.tmx[4][0]-1;
-                    *REG_VRAMRW = 5<<8;
-                    *REG_VRAMRW = 256+arthur.tmx[5][0]-1;
-                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version][16]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][16]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
                     *REG_VRAMADDR=ADDR_SCB1+((arthur.sprite+1)*64);
-                    *REG_VRAMRW = 256+arthur.tmx[4][1]-1;
-                    *REG_VRAMRW = 5<<8;
-                    *REG_VRAMRW = 256+arthur.tmx[5][1]-1;
-                    *REG_VRAMRW = 5<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version][17]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
+                    *REG_VRAMRW = 256+tmx_arthur[arthur.version+1][17]-1;
+                    *REG_VRAMRW = arthur.palette<<8;
                     arthur.y+=saut_vertical[arthur.cpt2];
                     if ( arthur.cpt2 == 19 ){
                         arthur.action=0;
@@ -1544,11 +1552,11 @@ int main(void) {
     }
 
     // Init tmx arthur
-    for(j = 0; j < 10; j++) {
+    /*for(j = 0; j < 10; j++) {
         for(loop = 0; loop < 16; loop++) {
-            arthur.tmx[j][loop] = tmx_arthur[j][loop];
+            tmx_arthur[j][loop] = tmx_arthur[j][loop];
         }
-    }
+    }*/
 
     arthur_tile_x = FIX_TILEX(arthur_absolute_x);
 
@@ -1627,7 +1635,7 @@ int main(void) {
             }
 
             if ( arthur_mort == 0 ) {
-                check_move_arthur();
+                check_move_arthur();                
             }
             else if ( arthur_mort == 1){
                 for(i=0;i<6000;i++){
