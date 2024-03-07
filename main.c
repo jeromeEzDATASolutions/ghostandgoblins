@@ -44,7 +44,7 @@
 #define SROM_EMPTY_TILE 255
 
 // Parameters of the first level
-#define DEBUG 0
+#define DEBUG 1
 #define START_LEVEL 1
 #define DEBUG_DISPLAY_GHOSTS 1
 #define GNG_LEVEL1_MAP_WIDTH 224
@@ -140,6 +140,8 @@ typedef struct _arthur_t {
     u16 arthur_sur_echelle;
     u16 floor;
     u16 action;
+    s8 touche;          // si arthur est touche par un ennemi alors = 1
+    s8 touche_cpt;      // compteur pour l'animation suite au touche
     s16 x;
     s16 y;
     u16 tmx[10][16];
@@ -147,6 +149,7 @@ typedef struct _arthur_t {
     s16 cpt2;
     s8 version; // Correspond à la ligne à partir de laquelle il faut afficher Arthur : 0 pour l'armure, 4 sans l'armure
     s8 palette;
+    s8 control_b1;
 } arthur_t;
 
 // --- Declaration des tombes
@@ -223,15 +226,18 @@ arthur_t arthur = {
     .height = 2,
     .arthur_devant_echelle = 0, 
     .arthur_sur_echelle = 0, 
-    .floor = 0, 
+    .floor = 0,
     .action = 0,
+    .touche = 0, // si arthur est touche par un ennemi alors = 1
+    .touche_cpt = 0, // compteur pour l'animation suite au touche
     .x = 130,
     .y = -178,
     .tmx = {},
     .cpt1 = 0, 
     .cpt2 = 0, 
-    .version = 0, 
-    .palette = 7, 
+    .version = 0, // 4 sans armure
+    .palette = 7, // 8 palette sans armure
+    .control_b1 = 0, 
 };
 
 // ----------------------------------
@@ -508,6 +514,18 @@ int collision_flottes(){
     u8 i=0;
     for(i=0;i<GNG_LEVEL1_TOMBES_COUNT;i++){
         if ( arthur_absolute_x == tombes[i].origin_x ){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+u8 collision_with_ennemies(){
+    u8 i=0;
+    for(i=0;i<GHOST_NOMBRE;i++){
+        if ( arthur.x == ghosts[i].x && ghosts[i].state == GHOST_MARCHE ){
+            arthur.touche = 1;
+            arthur.touche_cpt = 0;
             return 1;
         }
     }
@@ -1023,6 +1041,7 @@ void check_move_arthur()
     u8 b2=(bios_p1current & 32);
 
     u8 collision = 0;
+    u8 bool_touch_ennemies = 0;
 
     joystate[0]=u?'1':'0';
     joystate[1]=d?'1':'0';
@@ -1030,7 +1049,9 @@ void check_move_arthur()
     joystate[3]=r?'1':'0';
 
     // --- Button 1
-    if ( b1 ) {
+    /*
+    if ( b1 && arthur.control_b1 == 0 ) {
+        arthur.control_b1 = 1;
         if ( arthur.version == 0 ){
             arthur.version=4;
             arthur.palette=8;
@@ -1038,6 +1059,20 @@ void check_move_arthur()
         else if ( arthur.version == 4 ){
             arthur.version=0;
             arthur.palette=7;
+        }
+    }
+    */
+
+    if ( arthur.touche == 1 ){
+        arthur.touche=0;
+        if ( arthur.version == 0 ){
+            arthur.version=4;
+            arthur.palette=8;
+        }
+        else if ( arthur.version == 4 ){
+            arthur.version=4;
+            arthur.palette=8;
+            arthur_mort = 1;
         }
     }
 
@@ -1375,6 +1410,10 @@ void check_move_arthur()
                 // --- Gestion des collisions
                 // collision = athur_collisions();
                 collision = collision_tombe();
+                bool_touch_ennemies = collision_with_ennemies();
+
+                // --- On checke si arthur touche qqchose qui va le tuer
+
 
                 // --- On tombe dans l'eau et on recommence au début du niveau
                 if ( background.tmx[14][tile+8] == LEVEL1_FLOTTE_TILE && arthur.action != ARTHUR_SAUT_HORIZONTAL_GAUCHE && arthur.action != ARTHUR_SAUT_HORIZONTAL_DROITE ){
@@ -1483,6 +1522,12 @@ void check_move_arthur()
                 }
             }
         }
+
+        /*
+        if ( b1 == 0 && arthur.control_b1 == 1 ){
+            arthur.control_b1 = 0;
+        }
+        */
 
         if ( prendre_en_compte == 1 ){
 
@@ -1664,6 +1709,8 @@ int main(void) {
                 tombes[0].x = 40;
                 tombes[1].x = 243;
                 tile = 0;
+                arthur.version = 0;
+                arthur.palette = 7;
 
                 // Erase sprites
                 clear_sprites(&background);
@@ -1674,6 +1721,7 @@ int main(void) {
 
                 for(i=0;i<GHOST_NOMBRE;i++){
                     ghosts[i].state = GHOST_HIDDEN;
+                    ghost_display(&ghosts[i]);
                 }
 
                 // Pause de 5s
@@ -1714,8 +1762,9 @@ int main(void) {
         }
 
         if ( DEBUG == 1 ){
-            snprintf(str, 10, "A.Y %4d", arthur.y); ng_text(2, 3, 0, str);
-            snprintf(str, 10, "CPT2 %4d", bios_p1current); ng_text(2, 5, 0, str);
+            snprintf(str, 10, "X %4d", arthur_absolute_x); ng_text(2, 3, 0, str);
+            snprintf(str, 10, "G1X %4d", ghosts[0].x); ng_text(2, 5, 0, str);
+            snprintf(str, 10, "G2X %4d", collision_with_ennemies); ng_text(2, 7, 0, str);
             //snprintf(str, 10, "S %4d", ghost1.cpt); ng_text(2, 7, 0, str);
             //snprintf(str, 10, "TIL %4d", background.tmx[arthur_tile_y][arthur_tile_x]); ng_text(2, 5, 0, str);
             //snprintf(str, 10, "TIL %4d", background.tmx[arthur_tile_y+1][arthur_tile_x]); ng_text(2, 7, 0, str);
