@@ -44,8 +44,8 @@
 #define SROM_EMPTY_TILE 255
 
 // Parameters of the first level
-#define DEBUG 1
-#define START_LEVEL 1
+#define DEBUG 0
+#define START_LEVEL 0
 #define DEBUG_DISPLAY_GHOSTS 1
 #define GNG_LEVEL1_MAP_WIDTH 224
 #define PALETTE_NUMBER 8
@@ -1410,7 +1410,7 @@ void check_move_arthur()
                 // --- Gestion des collisions
                 // collision = athur_collisions();
                 collision = collision_tombe();
-                bool_touch_ennemies = collision_with_ennemies();
+                //bool_touch_ennemies = collision_with_ennemies();
 
                 // --- On checke si arthur touche qqchose qui va le tuer
 
